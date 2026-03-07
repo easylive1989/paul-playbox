@@ -1,0 +1,15 @@
+name: Deploy water_sort_puzzle
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "water_sort_puzzle/**"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/_reusable-flutter-deploy.yaml
+    with:
+      project_dir: water_sort_puzzle
+      flutter_version: "3.29.2"

@@ -1,0 +1,29 @@
+name: Deploy landing page
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "index.html"
+  workflow_dispatch:
+
+concurrency:
+  group: github-pages-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .
+          destination_dir: .
+          keep_files: true
+          exclude_assets: ".github,flutter_breakout,flutter_tetris,knight_counter_demo,player_ns_shaft,ray_world_game,water_sort_puzzle,tiny_swords,.git,.gitignore"
