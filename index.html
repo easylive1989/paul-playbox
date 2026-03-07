@@ -7,6 +7,7 @@
   <link rel="icon" type="image/png" sizes="32x32" href="public/favicon/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="public/favicon/favicon-16x16.png">
   <link rel="apple-touch-icon" sizes="180x180" href="public/favicon/apple-touch-icon.png">
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9031377620197189" crossorigin="anonymous"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -133,7 +134,7 @@
     }
   </style>
 </head>
-<body class="bg-navy-900 text-slate-200 min-h-screen">
+<body class="bg-navy-900 text-slate-200 min-h-screen flex flex-col">
 
   <!-- Subtle gradient background -->
   <div class="fixed inset-0 -z-10">
@@ -171,7 +172,7 @@
   </div>
 
   <!-- Game Grid -->
-  <main class="w-full max-w-5xl mx-auto px-6 py-10">
+  <main class="flex-1 w-full max-w-5xl mx-auto px-6 py-10">
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5" id="game-grid">
     </div>
   </main>
@@ -220,6 +221,27 @@
       `;
       grid.appendChild(card);
     });
+
+    // Ad card - 工商服務
+    const adCard = document.createElement('div');
+    const adDelay = 0.3 + games.length * 0.1;
+    adCard.className = 'animate-card block bg-navy-700/50 border border-navy-600 rounded-2xl overflow-hidden backdrop-blur-sm';
+    adCard.style.animationDelay = `${adDelay}s`;
+    adCard.innerHTML = `
+      <div class="aspect-video overflow-hidden bg-navy-800 flex items-center justify-center">
+        <ins class="adsbygoogle"
+             style="display:block;width:100%;height:100%"
+             data-ad-client="ca-pub-9031377620197189"
+             data-ad-slot="7560226822"
+             data-ad-format="auto"
+             data-full-width-responsive="true"></ins>
+      </div>
+      <div class="p-4 flex items-center justify-between">
+        <h2 class="font-pixel text-xs text-white leading-relaxed">工商服務</h2>
+      </div>
+    `;
+    grid.appendChild(adCard);
+    (adsbygoogle = window.adsbygoogle || []).push({});
   </script>
 
 </body>
