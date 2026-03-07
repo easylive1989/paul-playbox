@@ -6,7 +6,6 @@ on:
     paths:
       - 'flutter_breakout/**'
       - 'flutter_tetris/**'
-      - 'knight_counter_demo/**'
       - 'player_ns_shaft/**'
       - 'ray_world_game/**'
       - 'water_sort_puzzle/**'
@@ -39,12 +38,6 @@ jobs:
           - project: flutter_tetris
             working-directory: flutter_tetris
             base-href: /paul-playbox/flutter_tetris/
-            flutter-version: '3.7.10'
-            build-args: "--web-renderer html"
-            target: ""
-          - project: knight_counter_demo
-            working-directory: knight_counter_demo
-            base-href: /paul-playbox/knight_counter_demo/
             flutter-version: '3.7.10'
             build-args: "--web-renderer html"
             target: ""
