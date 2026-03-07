@@ -1,0 +1,175 @@
+name: Deploy Games to GitHub Pages
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'flutter_breakout/**'
+      - 'flutter_tetris/**'
+      - 'knight_counter_demo/**'
+      - 'player_ns_shaft/**'
+      - 'ray_world_game/**'
+      - 'water_sort_puzzle/**'
+      - 'tiny_swords/**'
+      - 'index.html'
+      - '.github/workflows/deploy-games.yaml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build-flutter:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - project: flutter_breakout
+            working-directory: flutter_breakout
+            base-href: /paul-playbox/flutter_breakout/
+            flutter-version: '3.29.2'
+            build-args: "--web-renderer html"
+            target: ""
+          - project: flutter_tetris
+            working-directory: flutter_tetris
+            base-href: /paul-playbox/flutter_tetris/
+            flutter-version: '3.29.2'
+            build-args: "--web-renderer html"
+            target: ""
+          - project: knight_counter_demo
+            working-directory: knight_counter_demo
+            base-href: /paul-playbox/knight_counter_demo/
+            flutter-version: '3.29.2'
+            build-args: "--web-renderer html"
+            target: ""
+          - project: player_ns_shaft
+            working-directory: player_ns_shaft
+            base-href: /paul-playbox/player_ns_shaft/
+            flutter-version: '3.29.2'
+            build-args: "--web-renderer html"
+            target: "-t lib/main_production.dart"
+          - project: ray_world_game
+            working-directory: ray_world_game
+            base-href: /paul-playbox/ray_world_game/
+            flutter-version: '3.29.2'
+            build-args: "--web-renderer html"
+            target: ""
+          - project: water_sort_puzzle
+            working-directory: water_sort_puzzle
+            base-href: /paul-playbox/water_sort_puzzle/
+            flutter-version: '3.29.2'
+            build-args: ""
+            target: ""
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check for changes
+        id: check
+        run: |
+          if ! git rev-parse HEAD~1 >/dev/null 2>&1; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          elif git diff --name-only HEAD~1 HEAD | grep -qE "^${{ matrix.working-directory }}/|^\.github/workflows/deploy-games\.yaml$"; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Restore cached build
+        id: cache
+        if: steps.check.outputs.changed == 'false'
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ matrix.working-directory }}/build/web
+          key: pages-${{ matrix.project }}-${{ github.sha }}
+          restore-keys: |
+            pages-${{ matrix.project }}-
+
+      - uses: subosito/flutter-action@v2
+        if: steps.check.outputs.changed == 'true' || steps.cache.outputs.cache-hit != 'true'
+        with:
+          flutter-version: ${{ matrix.flutter-version }}
+          channel: 'stable'
+
+      - name: Install dependencies
+        if: steps.check.outputs.changed == 'true' || steps.cache.outputs.cache-hit != 'true'
+        working-directory: ${{ matrix.working-directory }}
+        run: flutter pub get
+
+      - name: Build web
+        if: steps.check.outputs.changed == 'true' || steps.cache.outputs.cache-hit != 'true'
+        working-directory: ${{ matrix.working-directory }}
+        run: flutter build web --release --base-href "${{ matrix.base-href }}" ${{ matrix.build-args }} ${{ matrix.target }}
+
+      - name: Save build cache
+        if: steps.check.outputs.changed == 'true' || steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ matrix.working-directory }}/build/web
+          key: pages-${{ matrix.project }}-${{ github.sha }}
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.project }}
+          path: ${{ matrix.working-directory }}/build/web
+
+  build-static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare tiny_swords
+        run: |
+          mkdir -p tiny_swords_deploy
+          rsync -a \
+            --exclude='node_modules' --exclude='tests' --exclude='test-results' \
+            --exclude='.github' --exclude='.gitignore' --exclude='package.json' \
+            --exclude='package-lock.json' --exclude='eslint.config.js' \
+            --exclude='playwright.config.js' --exclude='CLAUDE.md' \
+            tiny_swords/ tiny_swords_deploy/
+
+      - name: Upload tiny_swords artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tiny_swords
+          path: tiny_swords_deploy
+
+      - name: Upload landing page artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: landing-page
+          path: index.html
+
+  deploy:
+    needs: [build-flutter, build-static]
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: combined
+
+      - name: Arrange landing page
+        run: |
+          mv combined/landing-page/index.html combined/index.html
+          rm -rf combined/landing-page
+
+      - name: Upload combined Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: combined
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
