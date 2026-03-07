@@ -4,86 +4,223 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Paul's Playbox</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="public/favicon/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="public/favicon/favicon-16x16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="public/favicon/apple-touch-icon.png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            pixel: ['"Press Start 2P"', 'cursive'],
+            display: ['"Noto Sans TC"', 'sans-serif'],
+            body: ['Outfit', 'sans-serif'],
+          },
+          colors: {
+            navy: {
+              900: '#0b1120',
+              800: '#0f172a',
+              700: '#1e293b',
+              600: '#334155',
+            },
+            accent: {
+              DEFAULT: '#60a5fa',
+              bright: '#93c5fd',
+              dim: '#3b82f6',
+            }
+          }
+        }
+      }
+    }
+  </script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #0f172a;
-      color: #e2e8f0;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 3rem 1rem;
+    body { font-family: 'Outfit', sans-serif; }
+
+    /* Scanline overlay for retro feel */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 0, 0, 0.03) 2px,
+        rgba(0, 0, 0, 0.03) 4px
+      );
+      pointer-events: none;
+      z-index: 100;
     }
-    h1 {
-      font-size: 2.5rem;
-      margin-bottom: 0.5rem;
+
+    /* Animations */
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
     }
-    p.subtitle {
-      color: #94a3b8;
-      margin-bottom: 2.5rem;
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
     }
-    .games {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 1rem;
-      max-width: 900px;
-      width: 100%;
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
     }
-    a.card {
-      display: block;
-      background: #1e293b;
-      border: 1px solid #334155;
-      border-radius: 12px;
-      padding: 1.5rem;
-      text-decoration: none;
-      color: #e2e8f0;
-      transition: transform 0.15s, border-color 0.15s;
+
+    .animate-header {
+      opacity: 0;
+      animation: fadeSlideUp 0.6s ease-out 0.2s forwards;
     }
-    a.card:hover {
-      transform: translateY(-2px);
+
+    .animate-nav {
+      opacity: 0;
+      animation: fadeIn 0.5s ease-out 0.3s forwards;
+    }
+
+    .animate-card {
+      opacity: 0;
+      animation: fadeSlideUp 0.5s ease-out forwards;
+    }
+
+    .animate-footer {
+      opacity: 0;
+      animation: fadeIn 0.6s ease-out 1.2s forwards;
+    }
+
+    .card-hover {
+      transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+    }
+    .card-hover:hover {
+      transform: scale(1.03);
+      box-shadow: 0 8px 32px rgba(96, 165, 250, 0.15), 0 0 0 1px rgba(96, 165, 250, 0.3);
       border-color: #60a5fa;
     }
-    a.card h2 { font-size: 1.15rem; margin-bottom: 0.35rem; }
-    a.card .tag {
-      display: inline-block;
-      font-size: 0.75rem;
-      background: #334155;
-      padding: 0.15rem 0.5rem;
-      border-radius: 4px;
-      color: #94a3b8;
+
+    .avatar-float {
+      animation: float 3s ease-in-out infinite;
+    }
+
+    .play-btn {
+      transition: background-color 0.2s ease, transform 0.15s ease;
+    }
+    .play-btn:hover {
+      background-color: #3b82f6;
+      transform: translateY(-1px);
+    }
+
+    /* Nav link underline animation */
+    .nav-link {
+      position: relative;
+    }
+    .nav-link::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: #60a5fa;
+      transition: width 0.25s ease;
+    }
+    .nav-link:hover::after {
+      width: 100%;
     }
   </style>
 </head>
-<body>
-  <h1>Paul's Playbox</h1>
-  <p class="subtitle">A collection of game experiments</p>
-  <div class="games">
-    <a class="card" href="flutter_breakout/">
-      <h2>Flutter Breakout</h2>
-      <span class="tag">Flutter</span>
-    </a>
-    <a class="card" href="flutter_tetris/">
-      <h2>Flutter Tetris</h2>
-      <span class="tag">Flutter</span>
-    </a>
-    <a class="card" href="player_ns_shaft/">
-      <h2>Player NS Shaft</h2>
-      <span class="tag">Flutter</span>
-    </a>
-    <a class="card" href="ray_world_game/">
-      <h2>Ray World Game</h2>
-      <span class="tag">Flutter</span>
-    </a>
-    <a class="card" href="water_sort_puzzle/">
-      <h2>Water Sort Puzzle</h2>
-      <span class="tag">Flutter</span>
-    </a>
-    <a class="card" href="tiny_swords/">
-      <h2>Tiny Swords RTS</h2>
-      <span class="tag">Phaser / JS</span>
-    </a>
+<body class="bg-navy-900 text-slate-200 min-h-screen">
+
+  <!-- Subtle gradient background -->
+  <div class="fixed inset-0 -z-10">
+    <div class="absolute inset-0 bg-gradient-to-b from-navy-900 via-navy-800 to-navy-900"></div>
+    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-accent/[0.04] rounded-full blur-[120px]"></div>
   </div>
+
+  <!-- Header -->
+  <header class="w-full max-w-5xl mx-auto px-6 pt-8 pb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+    <!-- Left: Avatar + Title -->
+    <div class="animate-header flex items-center gap-5">
+      <img
+        src="public/avatar.png"
+        alt="Paul's avatar"
+        class="avatar-float w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-navy-600 shadow-lg"
+        style="image-rendering: pixelated;"
+      >
+      <div>
+        <h1 class="font-display text-2xl sm:text-3xl text-white font-black tracking-tight">保羅的遊樂場</h1>
+        <p class="text-slate-400 text-sm mt-1 font-light tracking-wide">遊戲是第九藝術，喜歡遊戲，熱愛遊戲，持續追尋創意</p>
+      </div>
+    </div>
+
+    <!-- Right: Nav -->
+    <nav class="animate-nav flex items-center gap-6 text-sm font-medium">
+      <a href="#" class="nav-link text-accent hover:text-accent-bright">Home</a>
+      <a href="https://github.com/easylive1989/paul-playbox" target="_blank" class="nav-link text-slate-400 hover:text-accent">Github</a>
+      <a href="mailto:easylive1989@gmail.com" class="nav-link text-slate-400 hover:text-accent">Contact</a>
+    </nav>
+  </header>
+
+  <!-- Divider -->
+  <div class="w-full max-w-5xl mx-auto px-6">
+    <div class="h-px bg-gradient-to-r from-transparent via-navy-600 to-transparent"></div>
+  </div>
+
+  <!-- Game Grid -->
+  <main class="w-full max-w-5xl mx-auto px-6 py-10">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5" id="game-grid">
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="animate-footer w-full max-w-5xl mx-auto px-6 py-8 text-center">
+    <div class="h-px bg-gradient-to-r from-transparent via-navy-600 to-transparent mb-6"></div>
+    <p class="text-slate-500 text-sm">&copy; 2024 Paul's Playbox. All rights reserved.</p>
+  </footer>
+
+  <script>
+    const games = [
+      { name: 'Flutter Breakout', image: 'public/breakout.png', url: 'flutter_breakout/' },
+      { name: 'Flutter Tetris', image: 'public/tetris.png', url: 'flutter_tetris/' },
+      { name: 'Player NS Shaft', image: 'public/ns_shaft.png', url: 'player_ns_shaft/' },
+      { name: 'Ray World Game', image: 'public/ray world.png', url: 'ray_world_game/' },
+      { name: 'Water Sort Puzzle', image: 'public/water_sort_puzzle.png', url: 'water_sort_puzzle/' },
+      { name: 'Tiny Swords RTS', image: 'public/tiny_swords.png', url: 'tiny_swords/' },
+    ];
+
+    const grid = document.getElementById('game-grid');
+
+    games.forEach((game, i) => {
+      const delay = 0.3 + i * 0.1;
+      const card = document.createElement('a');
+      card.href = game.url;
+      card.target = '_blank';
+      card.rel = 'noopener noreferrer';
+      card.className = 'animate-card card-hover group block bg-navy-700/50 border border-navy-600 rounded-2xl overflow-hidden backdrop-blur-sm';
+      card.style.animationDelay = `${delay}s`;
+      card.innerHTML = `
+        <div class="aspect-video overflow-hidden bg-navy-800">
+          <img
+            src="${game.image}"
+            alt="${game.name} screenshot"
+            class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            loading="lazy"
+          >
+        </div>
+        <div class="p-4 flex items-center justify-between">
+          <h2 class="font-pixel text-xs text-white leading-relaxed">${game.name}</h2>
+          <span class="play-btn inline-block bg-accent/80 text-navy-900 text-xs font-semibold px-4 py-1.5 rounded-lg whitespace-nowrap">
+            Play
+          </span>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+  </script>
+
 </body>
 </html>
