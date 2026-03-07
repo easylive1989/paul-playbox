@@ -1,0 +1,17 @@
+{
+  "name": "tiny-swords-rts",
+  "version": "1.0.0",
+  "description": "Tiny Swords RTS - A StarCraft-like tower defense game",
+  "type": "module",
+  "scripts": {
+    "dev": "live-server --port=8081 --no-browser --ignore='**/.git/**,test-results/**'",
+    "lint": "eslint src/",
+    "test": "npx playwright test"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.40.0",
+    "eslint": "^10.0.2",
+    "live-server": "^1.2.2"
+  }
+}
