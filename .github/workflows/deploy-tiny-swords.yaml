@@ -25,11 +25,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Prepare deploy folder
+        run: |
+          mkdir -p deploy
+          rsync -a --exclude='node_modules' --exclude='tests' --exclude='test-results' \
+            --exclude='.github' --exclude='.gitignore' --exclude='package.json' \
+            --exclude='package-lock.json' --exclude='eslint.config.js' \
+            --exclude='playwright.config.js' --exclude='CLAUDE.md' \
+            ./tiny_swords/ deploy/
+
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
+        uses: JamesIves/github-pages-deploy-action@v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./tiny_swords
-          destination_dir: tiny_swords
-          keep_files: true
-          exclude_assets: "node_modules,tests,test-results,.github,.gitignore,package.json,package-lock.json,eslint.config.js,playwright.config.js,CLAUDE.md"
+          folder: deploy
+          target-folder: tiny_swords
+          clean: false

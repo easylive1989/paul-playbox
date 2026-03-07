@@ -19,11 +19,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Prepare deploy folder
+        run: |
+          mkdir -p deploy
+          cp index.html deploy/
+
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
+        uses: JamesIves/github-pages-deploy-action@v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: .
-          destination_dir: .
-          keep_files: true
-          exclude_assets: ".github,flutter_breakout,flutter_tetris,knight_counter_demo,player_ns_shaft,ray_world_game,water_sort_puzzle,tiny_swords,.git,.gitignore"
+          folder: deploy
+          clean: false

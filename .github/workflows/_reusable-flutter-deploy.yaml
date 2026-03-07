@@ -35,9 +35,8 @@ jobs:
         run: flutter build web --release --base-href "/paul-playbox/${{ inputs.project_dir }}/"
 
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
+        uses: JamesIves/github-pages-deploy-action@v4
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./${{ inputs.project_dir }}/build/web
-          destination_dir: ${{ inputs.project_dir }}
-          keep_files: true
+          folder: ./${{ inputs.project_dir }}/build/web
+          target-folder: ${{ inputs.project_dir }}
+          clean: false
