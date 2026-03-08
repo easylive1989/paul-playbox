@@ -175,8 +175,8 @@ export class PourAnimator {
         const leftEdge: Point[] = [];
         const rightEdge: Point[] = [];
 
-        const startWidth = 5;   // width at pour lip
-        const endWidth = 2;     // narrow at the tip (gravity stretching)
+        const startWidth = 28;   // width at pour lip
+        const endWidth = 14;    // narrow at the tip (gravity stretching)
         const time = this.scene.time.now * 0.008; // for wobble
 
         for (let s = 0; s <= steps; s++) {
