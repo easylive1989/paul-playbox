@@ -12,7 +12,7 @@ export const MAX_SCROLL_SPEED = 180;
 export const SCROLL_ACCELERATION = 0.5; // px/s increase per second
 
 // Platforms
-export const PLATFORM_SPACING = 100;
+export const PLATFORM_SPACING = 120;
 export const PLATFORM_COUNT = 8;
 export const PLATFORM_WIDTH = 110;
 export const PLATFORM_HEIGHT = 36;
