@@ -44,13 +44,13 @@ export default class BootScene extends Phaser.Scene {
     }
 
     create() {
-        // Extract single tile from tileset and stretch to platform size
-        // Orange grass tile: single tile at top-left, ~58x41
-        this.createPlatformTexture('platform_normal', 2, 2, 58, 41);
-        // Blue tile: single tile at bottom-left area
-        this.createPlatformTexture('platform_spike', 2, 158, 58, 41);
-        // Moving: same as normal (tinted in code)
-        this.createPlatformTexture('platform_moving', 2, 48, 58, 41);
+        // Extract tiles with exact pixel boundaries (no transparency)
+        // Orange tile: x=16, y=16, w=48, h=35
+        this.createPlatformTexture('platform_normal', 16, 16, 48, 35);
+        // Blue tile: x=16, y=160, w=48, h=41
+        this.createPlatformTexture('platform_spike', 16, 160, 48, 41);
+        // Moving: use second row orange tile
+        this.createPlatformTexture('platform_moving', 16, 16, 48, 35);
 
         this.scene.start('TitleScene');
     }

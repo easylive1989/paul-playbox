@@ -33,11 +33,10 @@ export default class Platform extends Phaser.GameObjects.Image {
 
     drawSpikesAt(gfx, cx, cy) {
         gfx.clear();
-        const w = this.displayWidth;
-        const topY = cy - this.displayHeight / 2;
+        const topY = cy - PLATFORM_HEIGHT / 2;
         const spikeW = 8;
         const spikeH = 8;
-        const count = Math.floor(w / spikeW);
+        const count = Math.floor(PLATFORM_WIDTH / spikeW);
         const totalW = count * spikeW;
         const startX = cx - totalW / 2;
 
@@ -84,7 +83,7 @@ export default class Platform extends Phaser.GameObjects.Image {
 
         if (type === 'spike') {
             if (!this.spikeIndicator) {
-                this.spikeIndicator = this.scene.add.rectangle(x, y - PLATFORM_HEIGHT / 2 - 2, PLATFORM_WIDTH, 4, 0xff4444);
+                this.spikeIndicator = this.createSpikes(this.scene, x, y);
             } else {
                 this.drawSpikesAt(this.spikeIndicator, x, y);
                 this.spikeIndicator.setVisible(true);
