@@ -42,12 +42,6 @@ jobs:
             flutter-version: '3.7.10'
             build-args: "--web-renderer html"
             target: ""
-          - project: player_ns_shaft
-            working-directory: player_ns_shaft
-            base-href: /paul-playbox/player_ns_shaft/
-            flutter-version: '3.7.10'
-            build-args: "--web-renderer html"
-            target: "-t lib/main_production.dart"
           - project: ray_world_game
             working-directory: ray_world_game
             base-href: /paul-playbox/ray_world_game/
@@ -135,6 +129,27 @@ jobs:
         with:
           name: tiny_swords
           path: tiny_swords_deploy
+
+      - name: Prepare player_ns_shaft
+        run: |
+          mkdir -p player_ns_shaft_deploy
+          rsync -a \
+            --exclude='node_modules' --exclude='tests' --exclude='test-results' \
+            --exclude='.github' --exclude='.gitignore' --exclude='package.json' \
+            --exclude='package-lock.json' --exclude='eslint.config.js' \
+            --exclude='playwright.config.js' --exclude='CLAUDE.md' \
+            --exclude='lib' --exclude='test' --exclude='android' --exclude='ios' \
+            --exclude='windows' --exclude='web' --exclude='pubspec.*' \
+            --exclude='analysis_options.yaml' --exclude='.metadata' \
+            --exclude='coverage_badge.svg' --exclude='l10n.yaml' \
+            --exclude='.dart_tool' --exclude='.packages' --exclude='build' \
+            player_ns_shaft/ player_ns_shaft_deploy/
+
+      - name: Upload player_ns_shaft artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: player_ns_shaft
+          path: player_ns_shaft_deploy
 
       - name: Prepare landing page
         run: |
