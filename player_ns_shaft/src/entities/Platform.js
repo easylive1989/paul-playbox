@@ -21,7 +21,34 @@ export default class Platform extends Phaser.GameObjects.Image {
 
         // Spike indicator: red glow on top
         if (type === 'spike') {
-            this.spikeIndicator = scene.add.rectangle(x, y - PLATFORM_HEIGHT / 2 - 2, PLATFORM_WIDTH, 4, 0xff4444);
+            this.spikeIndicator = this.createSpikes(scene, x, y);
+        }
+    }
+
+    createSpikes(scene, cx, cy) {
+        const gfx = scene.add.graphics();
+        this.drawSpikesAt(gfx, cx, cy);
+        return gfx;
+    }
+
+    drawSpikesAt(gfx, cx, cy) {
+        gfx.clear();
+        const w = this.displayWidth;
+        const topY = cy - this.displayHeight / 2;
+        const spikeW = 8;
+        const spikeH = 8;
+        const count = Math.floor(w / spikeW);
+        const totalW = count * spikeW;
+        const startX = cx - totalW / 2;
+
+        gfx.fillStyle(0xaaaaaa, 1);
+        for (let i = 0; i < count; i++) {
+            const sx = startX + i * spikeW;
+            gfx.fillTriangle(
+                sx, topY,
+                sx + spikeW / 2, topY - spikeH,
+                sx + spikeW, topY
+            );
         }
     }
 
@@ -32,8 +59,8 @@ export default class Platform extends Phaser.GameObjects.Image {
         this.x += dx;
         this.body.x = this.x - PLATFORM_WIDTH / 2;
 
-        if (this.spikeIndicator) {
-            this.spikeIndicator.x = this.x;
+        if (this.spikeIndicator && this.spikeIndicator.visible) {
+            this.drawSpikesAt(this.spikeIndicator, this.x, this.y);
         }
 
         // Bounce off walls
@@ -59,7 +86,7 @@ export default class Platform extends Phaser.GameObjects.Image {
             if (!this.spikeIndicator) {
                 this.spikeIndicator = this.scene.add.rectangle(x, y - PLATFORM_HEIGHT / 2 - 2, PLATFORM_WIDTH, 4, 0xff4444);
             } else {
-                this.spikeIndicator.setPosition(x, y - PLATFORM_HEIGHT / 2 - 2);
+                this.drawSpikesAt(this.spikeIndicator, x, y);
                 this.spikeIndicator.setVisible(true);
             }
         } else {
@@ -74,8 +101,8 @@ export default class Platform extends Phaser.GameObjects.Image {
     scrollUp(amount) {
         this.y -= amount;
         this.body.y = this.y - PLATFORM_HEIGHT / 2;
-        if (this.spikeIndicator) {
-            this.spikeIndicator.y = this.y - PLATFORM_HEIGHT / 2 - 2;
+        if (this.spikeIndicator && this.spikeIndicator.visible) {
+            this.drawSpikesAt(this.spikeIndicator, this.x, this.y);
         }
     }
 
