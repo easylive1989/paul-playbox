@@ -48,12 +48,6 @@ jobs:
             flutter-version: '3.7.10'
             build-args: "--web-renderer html"
             target: ""
-          - project: water_sort_puzzle
-            working-directory: water_sort_puzzle
-            base-href: /paul-playbox/water_sort_puzzle/
-            flutter-version: '3.38.5'
-            build-args: ""
-            target: ""
     steps:
       - uses: actions/checkout@v4
         with:
@@ -150,6 +144,18 @@ jobs:
         with:
           name: player_ns_shaft
           path: player_ns_shaft_deploy
+
+      - name: Build water_sort_puzzle
+        working-directory: water_sort_puzzle
+        run: |
+          npm ci
+          npm run build
+
+      - name: Upload water_sort_puzzle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: water_sort_puzzle
+          path: water_sort_puzzle/dist
 
       - name: Prepare landing page
         run: |
