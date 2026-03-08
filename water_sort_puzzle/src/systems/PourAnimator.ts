@@ -148,14 +148,17 @@ export class PourAnimator {
       y: toBottle.y,
     };
 
-    // Control point: arch above midpoint
+    // Control point: gentle arc (gravity-like parabola)
     const p1: Point = {
-      x: (p0.x + p2.x) / 2 + (isLeft ? 10 : -10),
-      y: Math.min(p0.y, p2.y) - 40,
+      x: p0.x + (p2.x - p0.x) * 0.3,
+      y: Math.min(p0.y, p2.y) - 20,
     };
 
     const duration = ANIM.POUR_LAYER_MS;
     const startTime = this.scene.time.now;
+
+    // Droplet particles
+    const droplets: Phaser.GameObjects.Arc[] = [];
 
     return new Promise(resolve => {
       const update = () => {
@@ -163,27 +166,94 @@ export class PourAnimator {
         const progress = Math.min(elapsed / duration, 1);
 
         this.streamGfx.clear();
-        this.streamGfx.lineStyle(ANIM.STREAM_WIDTH, color, 1);
-        this.streamGfx.beginPath();
 
-        const steps = 20;
-        // Draw stream from start to current progress
+        const steps = 24;
         const headT = progress;
-        const tailT = Math.max(0, progress - 0.4);
+        const tailT = Math.max(0, progress - 0.5);
+
+        // Build left/right edge points along the curve with varying width
+        const leftEdge: Point[] = [];
+        const rightEdge: Point[] = [];
+
+        const startWidth = 5;   // width at pour lip
+        const endWidth = 2;     // narrow at the tip (gravity stretching)
+        const time = this.scene.time.now * 0.008; // for wobble
 
         for (let s = 0; s <= steps; s++) {
-          const t = tailT + (headT - tailT) * (s / steps);
+          const frac = s / steps;  // 0..1 along the visible stream
+          const t = tailT + (headT - tailT) * frac;
           const pt = quadraticBezier(p0, p1, p2, t);
-          if (s === 0) {
-            this.streamGfx.moveTo(pt.x, pt.y);
-          } else {
-            this.streamGfx.lineTo(pt.x, pt.y);
-          }
+
+          // Tangent for normal direction
+          const dt = 0.01;
+          const ptNext = quadraticBezier(p0, p1, p2, Math.min(t + dt, 1));
+          const dx = ptNext.x - pt.x;
+          const dy = ptNext.y - pt.y;
+          const len = Math.sqrt(dx * dx + dy * dy) || 1;
+          const nx = -dy / len;
+          const ny = dx / len;
+
+          // Width: thick at start, thin at end, with slight wobble
+          const widthFrac = 1 - frac;  // 1 at tail (lip), 0 at head (tip)
+          const wobble = Math.sin(time + frac * 12) * 0.6;
+          const halfW = (endWidth + (startWidth - endWidth) * widthFrac * widthFrac + wobble) * 0.5;
+
+          leftEdge.push({ x: pt.x + nx * halfW, y: pt.y + ny * halfW });
+          rightEdge.push({ x: pt.x - nx * halfW, y: pt.y - ny * halfW });
+        }
+
+        // Draw filled stream polygon
+        this.streamGfx.fillStyle(color, 0.9);
+        this.streamGfx.beginPath();
+        this.streamGfx.moveTo(leftEdge[0].x, leftEdge[0].y);
+        for (let i = 1; i < leftEdge.length; i++) {
+          this.streamGfx.lineTo(leftEdge[i].x, leftEdge[i].y);
+        }
+        for (let i = rightEdge.length - 1; i >= 0; i--) {
+          this.streamGfx.lineTo(rightEdge[i].x, rightEdge[i].y);
+        }
+        this.streamGfx.closePath();
+        this.streamGfx.fillPath();
+
+        // Lighter highlight streak along center for glossy look
+        this.streamGfx.lineStyle(1.5, 0xffffff, 0.15);
+        this.streamGfx.beginPath();
+        for (let s = 0; s <= steps; s++) {
+          const frac = s / steps;
+          const t = tailT + (headT - tailT) * frac;
+          const pt = quadraticBezier(p0, p1, p2, t);
+          if (s === 0) this.streamGfx.moveTo(pt.x, pt.y);
+          else this.streamGfx.lineTo(pt.x, pt.y);
         }
         this.streamGfx.strokePath();
 
+        // Spawn small droplets near the stream tip
+        if (progress > 0.2 && progress < 0.95 && Math.random() < 0.4) {
+          const tipT = headT;
+          const tip = quadraticBezier(p0, p1, p2, tipT);
+          const droplet = this.scene.add.circle(
+            tip.x + (Math.random() - 0.5) * 8,
+            tip.y + (Math.random() - 0.5) * 4,
+            Math.random() * 1.5 + 1,
+            color,
+            0.7,
+          );
+          droplet.setDepth(100);
+          droplets.push(droplet);
+
+          this.scene.tweens.add({
+            targets: droplet,
+            y: droplet.y + 15 + Math.random() * 10,
+            alpha: 0,
+            scale: 0.3,
+            duration: 200 + Math.random() * 150,
+            onComplete: () => droplet.destroy(),
+          });
+        }
+
         if (progress >= 1) {
           this.streamGfx.clear();
+          droplets.forEach(d => d.destroy());
           resolve();
         } else {
           this.scene.time.delayedCall(16, update);
