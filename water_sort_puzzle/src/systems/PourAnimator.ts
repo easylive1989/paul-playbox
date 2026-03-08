@@ -45,9 +45,24 @@ export class PourAnimator {
     });
 
     // Step 2: Move to above target bottle
-    const isLeft = fromBottle.x < toBottle.x;
-    const targetX = toBottle.x + (isLeft ? -BOTTLE.TOP_WIDTH : BOTTLE.TOP_WIDTH);
-    const targetY = toBottle.y - ANIM.LIFT_Y - 20;
+    // isLeft = source is to the left of target → tilt right (positive angle) toward target
+    const isLeft = fromBottle.x <= toBottle.x;
+    const tiltAngle = isLeft ? ANIM.TILT_ANGLE : -ANIM.TILT_ANGLE;
+    const tiltRad = Phaser.Math.DegToRad(tiltAngle);
+
+    // After tilting, the pour lip (edge of mouth on the target side) moves.
+    // Lip local position: (halfTop, 0) for right tilt, (-halfTop, 0) for left tilt
+    const halfTop = BOTTLE.TOP_WIDTH / 2;
+    const lipLocalX = isLeft ? halfTop : -halfTop;
+    const cosA = Math.cos(tiltRad);
+    const sinA = Math.sin(tiltRad);
+    // Lip world offset from container origin after rotation
+    const lipOffsetX = lipLocalX * cosA;
+    const lipOffsetY = lipLocalX * sinA;
+
+    // Position source so that after tilting, the lip is above the target mouth center
+    const targetX = toBottle.x - lipOffsetX;
+    const targetY = toBottle.y - lipOffsetY - 15;
 
     await tweenPromise(this.scene, {
       targets: fromBottle,
@@ -56,10 +71,6 @@ export class PourAnimator {
       duration: ANIM.MOVE_MS,
       ease: 'Quad.easeInOut',
     });
-
-    // Step 3: Tilt + pour
-    const tiltAngle = isLeft ? -ANIM.TILT_ANGLE : ANIM.TILT_ANGLE;
-    const tiltRad = Phaser.Math.DegToRad(tiltAngle);
 
     // Pre-pour state: save source layers before pour (GameState already executed)
     // We need to animate the visual change layer by layer
@@ -120,15 +131,15 @@ export class PourAnimator {
     _tiltRad: number,
     isLeft: boolean,
   ): Promise<void> {
-    // Calculate pour origin (bottle mouth in world coords)
-    const mouthLocalX = 0;
-    const mouthLocalY = 0;
+    // Calculate pour lip position (edge of mouth on the pouring side)
+    const halfTop = BOTTLE.TOP_WIDTH / 2;
+    const lipLocalX = isLeft ? halfTop : -halfTop;
     const angleRad = Phaser.Math.DegToRad(fromBottle.angle);
     const cosA = Math.cos(angleRad);
     const sinA = Math.sin(angleRad);
     const p0: Point = {
-      x: fromBottle.x + mouthLocalX * cosA - mouthLocalY * sinA,
-      y: fromBottle.y + mouthLocalX * sinA + mouthLocalY * cosA,
+      x: fromBottle.x + lipLocalX * cosA,
+      y: fromBottle.y + lipLocalX * sinA,
     };
 
     // Target: top of target bottle mouth
