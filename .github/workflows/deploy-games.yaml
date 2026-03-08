@@ -195,3 +195,43 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  notify:
+    needs: [build-flutter, build-static, deploy]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set notification details
+        id: details
+        run: |
+          if [ "${{ needs.deploy.result }}" = "success" ]; then
+            echo "status=✅ 部署成功" >> $GITHUB_OUTPUT
+            echo "color=3066993" >> $GITHUB_OUTPUT
+          else
+            FAILED_JOBS=""
+            if [ "${{ needs.build-flutter.result }}" = "failure" ]; then
+              FAILED_JOBS="build-flutter"
+            fi
+            if [ "${{ needs.build-static.result }}" = "failure" ]; then
+              FAILED_JOBS="${FAILED_JOBS:+$FAILED_JOBS, }build-static"
+            fi
+            if [ "${{ needs.deploy.result }}" = "failure" ]; then
+              FAILED_JOBS="${FAILED_JOBS:+$FAILED_JOBS, }deploy"
+            fi
+            echo "status=❌ 建置失敗 (${FAILED_JOBS:-unknown})" >> $GITHUB_OUTPUT
+            echo "color=15158332" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Send Discord notification
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          curl -H "Content-Type: application/json" \
+            -d "{
+              \"embeds\": [{
+                \"title\": \"${{ steps.details.outputs.status }}\",
+                \"description\": \"**Repo:** ${{ github.repository }}\n**Branch:** ${{ github.ref_name }}\n**Commit:** [\`${GITHUB_SHA::7}\`](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})\n**Workflow:** [查看詳情](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\",
+                \"color\": ${{ steps.details.outputs.color }}
+              }]
+            }" \
+            "$DISCORD_WEBHOOK_URL"
