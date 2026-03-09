@@ -10,6 +10,8 @@ on:
       - 'ray_world_game/**'
       - 'water_sort_puzzle/**'
       - 'tiny_swords/**'
+      - 'water_bottle_flip/**'
+      - 'stock_trading_game/**'
       - 'index.html'
       - 'public/**'
       - '.github/workflows/deploy-games.yaml'
@@ -156,6 +158,30 @@ jobs:
         with:
           name: water_sort_puzzle
           path: water_sort_puzzle/dist
+
+      - name: Build water_bottle_flip
+        working-directory: water_bottle_flip
+        run: |
+          npm ci
+          npm run build
+
+      - name: Upload water_bottle_flip artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: water_bottle_flip
+          path: water_bottle_flip/dist
+
+      - name: Build stock_trading_game
+        working-directory: stock_trading_game
+        run: |
+          npm ci
+          npm run build
+
+      - name: Upload stock_trading_game artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: stock_trading_game
+          path: stock_trading_game/dist
 
       - name: Prepare landing page
         run: |
