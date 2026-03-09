@@ -25,20 +25,14 @@ export class GameScene extends Phaser.Scene {
   // Controls
   private angleValue = 45; // degrees from vertical
   private powerValue = 50; // power percentage
+  private isDragging = false;
 
   // UI elements
-  private angleText!: Phaser.GameObjects.Text;
-  private powerText!: Phaser.GameObjects.Text;
   private statusText!: Phaser.GameObjects.Text;
   private difficultyText!: Phaser.GameObjects.Text;
   private scoreText!: Phaser.GameObjects.Text;
   private instructionText!: Phaser.GameObjects.Text;
-
-  // Sliders
-  private angleSlider!: Phaser.GameObjects.Graphics;
-  private powerSlider!: Phaser.GameObjects.Graphics;
-  private angleKnob!: Phaser.GameObjects.Arc;
-  private powerKnob!: Phaser.GameObjects.Arc;
+  private dragInfoText!: Phaser.GameObjects.Text;
 
   // Score
   private score = 0;
@@ -61,8 +55,8 @@ export class GameScene extends Phaser.Scene {
     this.createGround();
     this.createBottle();
     this.createUI();
-    this.createSliders();
     this.createArrow();
+    this.createDragInteraction();
 
     // Collision event
     this.matter.world.on('collisionstart', this.onCollision, this);
@@ -248,98 +242,95 @@ export class GameScene extends Phaser.Scene {
       strokeThickness: 4,
     }).setOrigin(0.5).setDepth(10);
 
-    // Angle label
-    this.angleText = this.add.text(50, 650, `角度: ${this.angleValue}°`, {
+    // Drag info (angle & power shown during drag)
+    this.dragInfoText = this.add.text(240, 650, '', {
       fontSize: '13px',
       fontFamily: 'Arial, sans-serif',
       color: '#37474F',
-    });
-
-    // Power label
-    this.powerText = this.add.text(260, 650, `力道: ${this.powerValue}%`, {
-      fontSize: '13px',
-      fontFamily: 'Arial, sans-serif',
-      color: '#37474F',
-    });
+    }).setOrigin(0.5);
 
     // Instruction
-    this.instructionText = this.add.text(240, 700, '調整角度與力道，按空白鍵或點擊丟出！', {
+    this.instructionText = this.add.text(240, 700, '按住瓶子拖曳設定方向與力道，放開丟出！', {
       fontSize: '12px',
       fontFamily: 'Arial, sans-serif',
       color: '#546E7A',
     }).setOrigin(0.5);
 
     // Keyboard input
-    this.input.keyboard!.on('keydown-SPACE', () => this.flipBottle());
     this.input.keyboard!.on('keydown-R', () => this.resetBottle());
-
-    // Touch/click to flip
-    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
-      // Only flip if clicking in the game area (not on sliders)
-      if (pointer.y < 640 && !this.isFlipping) {
-        this.flipBottle();
-      }
-    });
-  }
-
-  private createSliders(): void {
-    const sliderY = 670;
-    const sliderWidth = 140;
-
-    // Angle slider (left side)
-    this.angleSlider = this.add.graphics();
-    this.angleSlider.fillStyle(0xB0BEC5);
-    this.angleSlider.fillRoundedRect(50, sliderY, sliderWidth, 6, 3);
-
-    const angleKnobX = 50 + (this.angleValue / 80) * sliderWidth;
-    this.angleKnob = this.add.circle(angleKnobX, sliderY + 3, 10, 0x1976D2);
-    this.angleKnob.setInteractive({ useHandCursor: true, draggable: true });
-
-    this.input.setDraggable(this.angleKnob);
-    this.angleKnob.on('drag', (_pointer: Phaser.Input.Pointer, dragX: number) => {
-      const clamped = Phaser.Math.Clamp(dragX, 50, 50 + sliderWidth);
-      this.angleKnob.x = clamped;
-      this.angleValue = Math.round(((clamped - 50) / sliderWidth) * 80) + 10;
-      this.angleText.setText(`角度: ${this.angleValue}°`);
-      this.updateArrow();
-    });
-
-    // Power slider (right side)
-    this.powerSlider = this.add.graphics();
-    this.powerSlider.fillStyle(0xB0BEC5);
-    this.powerSlider.fillRoundedRect(260, sliderY, sliderWidth, 6, 3);
-
-    const powerKnobX = 260 + (this.powerValue / 100) * sliderWidth;
-    this.powerKnob = this.add.circle(powerKnobX, sliderY + 3, 10, 0xE53935);
-    this.powerKnob.setInteractive({ useHandCursor: true, draggable: true });
-
-    this.input.setDraggable(this.powerKnob);
-    this.powerKnob.on('drag', (_pointer: Phaser.Input.Pointer, dragX: number) => {
-      const clamped = Phaser.Math.Clamp(dragX, 260, 260 + sliderWidth);
-      this.powerKnob.x = clamped;
-      this.powerValue = Math.round(((clamped - 260) / sliderWidth) * 100);
-      this.powerText.setText(`力道: ${this.powerValue}%`);
-      this.updateArrow();
-    });
   }
 
   private createArrow(): void {
     this.arrowGraphics = this.add.graphics();
-    this.updateArrow();
   }
 
-  private updateArrow(): void {
-    if (this.isFlipping) return;
+  private createDragInteraction(): void {
+    const MAX_DRAG_DISTANCE = 150;
+    const BOTTLE_HIT_RADIUS = 70;
+
+    this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+      if (this.isFlipping) return;
+
+      // Check if pointer is near the bottle
+      const dx = pointer.x - this.bottle.x;
+      const dy = pointer.y - this.bottle.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (dist < BOTTLE_HIT_RADIUS) {
+        this.isDragging = true;
+        this.arrowGraphics.clear();
+        this.dragInfoText.setText('');
+      }
+    });
+
+    this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
+      if (!this.isDragging) return;
+
+      const bottleX = this.bottle.x;
+      const bottleY = this.bottle.y;
+      const dx = pointer.x - bottleX;
+      const dy = pointer.y - bottleY;
+      const dist = Math.min(Math.sqrt(dx * dx + dy * dy), MAX_DRAG_DISTANCE);
+
+      if (dist < 10) {
+        this.arrowGraphics.clear();
+        this.dragInfoText.setText('');
+        return;
+      }
+
+      // Angle from bottle to pointer (constrain to upper half: throw upward)
+      let angleRad = Math.atan2(dy, dx);
+      // Clamp to upper hemisphere (-170° to -10°)
+      angleRad = Phaser.Math.Clamp(angleRad, -Math.PI * 0.94, -Math.PI * 0.06);
+
+      // Convert to game values
+      // angleValue: degrees from vertical (10-90)
+      const angleDeg = -(Phaser.Math.RadToDeg(angleRad) + 90); // 0=straight up, 90=horizontal
+      this.angleValue = Phaser.Math.Clamp(Math.round(angleDeg), 10, 90);
+      this.powerValue = Phaser.Math.Clamp(Math.round((dist / MAX_DRAG_DISTANCE) * 100), 0, 100);
+
+      this.drawArrow(bottleX, bottleY, angleRad, dist);
+      this.dragInfoText.setText(`角度: ${this.angleValue}°  力道: ${this.powerValue}%`);
+    });
+
+    this.input.on('pointerup', () => {
+      if (!this.isDragging) return;
+      this.isDragging = false;
+
+      if (this.powerValue > 5) {
+        this.flipBottle();
+      } else {
+        this.arrowGraphics.clear();
+        this.dragInfoText.setText('');
+      }
+    });
+  }
+
+  private drawArrow(bottleX: number, bottleY: number, angleRad: number, length: number): void {
     this.arrowGraphics.clear();
 
-    const bottleX = this.bottle.x;
-    const bottleY = this.bottle.y;
-
-    const angleRad = Phaser.Math.DegToRad(-this.angleValue - 90);
-    const arrowLength = 30 + this.powerValue * 0.5;
-
-    const endX = bottleX + Math.cos(angleRad) * arrowLength;
-    const endY = bottleY + Math.sin(angleRad) * arrowLength;
+    const endX = bottleX + Math.cos(angleRad) * length;
+    const endY = bottleY + Math.sin(angleRad) * length;
 
     // Arrow line
     this.arrowGraphics.lineStyle(3, 0xE53935, 0.8);
@@ -507,12 +498,13 @@ export class GameScene extends Phaser.Scene {
 
     // Reset state
     this.isFlipping = false;
+    this.isDragging = false;
     this.hasLanded = false;
     this.resultShown = false;
     this.statusText.setText('');
-    this.instructionText.setText('調整角度與力道，按空白鍵或點擊丟出！');
-
-    this.updateArrow();
+    this.dragInfoText.setText('');
+    this.arrowGraphics.clear();
+    this.instructionText.setText('按住瓶子拖曳設定方向與力道，放開丟出！');
   }
 
   update(_time: number, delta: number): void {
