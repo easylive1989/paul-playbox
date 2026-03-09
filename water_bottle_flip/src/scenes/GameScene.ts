@@ -3,9 +3,6 @@ import Phaser from 'phaser';
 const BOTTLE_WIDTH = 40;
 const BOTTLE_HEIGHT = 120;
 const GROUND_Y = 620;
-const TABLE_Y = 540;
-const TABLE_WIDTH = 160;
-const TABLE_HEIGHT = 20;
 
 // Water level presets (0 = empty, 1 = full)
 const DIFFICULTIES = [
@@ -18,8 +15,6 @@ export class GameScene extends Phaser.Scene {
   private bottle!: Phaser.GameObjects.Container;
   private bottleBody!: MatterJS.BodyType;
   private ground!: MatterJS.BodyType;
-  private table!: MatterJS.BodyType;
-  private tableGraphics!: Phaser.GameObjects.Graphics;
 
   private difficultyIndex = 0;
   private isFlipping = false;
@@ -64,7 +59,6 @@ export class GameScene extends Phaser.Scene {
   create(): void {
     this.createBackground();
     this.createGround();
-    this.createTable();
     this.createBottle();
     this.createUI();
     this.createSliders();
@@ -112,30 +106,9 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  private createTable(): void {
-    const tableX = 240;
-
-    // Visual table
-    this.tableGraphics = this.add.graphics();
-    this.tableGraphics.fillStyle(0x8B4513);
-    this.tableGraphics.fillRect(tableX - TABLE_WIDTH / 2, TABLE_Y - TABLE_HEIGHT / 2, TABLE_WIDTH, TABLE_HEIGHT);
-    // Table legs
-    this.tableGraphics.fillStyle(0x6B3410);
-    this.tableGraphics.fillRect(tableX - TABLE_WIDTH / 2 + 10, TABLE_Y + TABLE_HEIGHT / 2, 8, GROUND_Y - TABLE_Y - TABLE_HEIGHT / 2);
-    this.tableGraphics.fillRect(tableX + TABLE_WIDTH / 2 - 18, TABLE_Y + TABLE_HEIGHT / 2, 8, GROUND_Y - TABLE_Y - TABLE_HEIGHT / 2);
-
-    // Physics table
-    this.table = this.matter.add.rectangle(tableX, TABLE_Y, TABLE_WIDTH, TABLE_HEIGHT, {
-      isStatic: true,
-      friction: 0.9,
-      restitution: 0.05,
-      label: 'table',
-    });
-  }
-
   private createBottle(): void {
     const startX = 240;
-    const startY = TABLE_Y - TABLE_HEIGHT / 2 - BOTTLE_HEIGHT / 2;
+    const startY = GROUND_Y - BOTTLE_HEIGHT / 2;
 
     // Create bottle graphics
     this.bottleGraphics = this.add.graphics();
@@ -428,8 +401,7 @@ export class GameScene extends Phaser.Scene {
 
     const bottleInvolved = bodyA === this.bottleBody || bodyB === this.bottleBody;
     const surfaceInvolved =
-      bodyA.label === 'ground' || bodyB.label === 'ground' ||
-      bodyA.label === 'table' || bodyB.label === 'table';
+      bodyA.label === 'ground' || bodyB.label === 'ground';
 
     if (bottleInvolved && surfaceInvolved) {
       this.hasLanded = true;
@@ -511,7 +483,7 @@ export class GameScene extends Phaser.Scene {
 
   private resetBottle(): void {
     const startX = 240;
-    const startY = TABLE_Y - TABLE_HEIGHT / 2 - BOTTLE_HEIGHT / 2;
+    const startY = GROUND_Y - BOTTLE_HEIGHT / 2;
 
     // Reset body in place instead of removing/recreating to avoid Matter.js state issues
     this.matter.body.setStatic(this.bottleBody, true);
