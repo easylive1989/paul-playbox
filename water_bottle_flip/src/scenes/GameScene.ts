@@ -160,9 +160,13 @@ export class GameScene extends Phaser.Scene {
       density: 0.002 + waterLevel * 0.005,
       frictionAir: 0.01,
       label: 'bottle',
-      isStatic: true,
       chamfer: { radius: 4 },
     });
+
+    // Set static AFTER creation so _original mass/inertia values are saved properly.
+    // Creating with isStatic:true skips saving _original in Matter.js Body.setStatic,
+    // which causes NaN positions when later switching to dynamic.
+    this.matter.body.setStatic(this.bottleBody, true);
 
     // Set center of mass offset (lower = more stable)
     this.matter.body.setCentre(this.bottleBody, { x: 0, y: comOffsetY }, true);
