@@ -3,7 +3,7 @@ import Phaser from 'phaser';
 const BOTTLE_WIDTH = 40;
 const BOTTLE_HEIGHT = 120;
 const GROUND_Y = 620;
-const BOTTLE_START_Y = 460; // Hand height for throwing
+const BOTTLE_START_Y = GROUND_Y - BOTTLE_HEIGHT / 2;
 
 // Water level presets (0 = empty, 1 = full)
 const DIFFICULTIES = [
