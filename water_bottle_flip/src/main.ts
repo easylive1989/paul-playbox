@@ -21,4 +21,9 @@ const config: Phaser.Types.Core.GameConfig = {
   scene: [GameScene],
 };
 
-new Phaser.Game(config);
+const game = new Phaser.Game(config);
+
+// Expose for e2e testing
+if (typeof window !== 'undefined') {
+  (window as any).__PHASER_GAME = game;
+}
