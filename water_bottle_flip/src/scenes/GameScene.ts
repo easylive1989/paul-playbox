@@ -1,28 +1,46 @@
 import Phaser from 'phaser';
 
+// Canvas
+const CANVAS_WIDTH = 480;
+const CANVAS_HEIGHT = 720;
+const CANVAS_CENTER_X = CANVAS_WIDTH / 2;
+
+// Bottle
 const BOTTLE_WIDTH = 40;
 const BOTTLE_HEIGHT = 120;
+const WATER_LEVEL = 0.5;
+const WATER_COLOR = 0x29b6f6;
+const COM_OFFSET_Y = BOTTLE_HEIGHT * 0.15 * (1 - WATER_LEVEL);
+
+// World
 const GROUND_Y = 620;
 const BOTTLE_START_Y = GROUND_Y - BOTTLE_HEIGHT / 2;
 
-const WATER_LEVEL = 0.5;
-const WATER_COLOR = 0x29b6f6;
+// Drag interaction
+const MAX_DRAG_DISTANCE = 150;
+const BOTTLE_HIT_RADIUS = 70;
+const MIN_POWER_TO_THROW = 0.05;
+
+// Physics
+const THROW_BASE_FORCE = 0.08;
+const THROW_POWER_FORCE = 0.12;
+const THROW_VELOCITY_SCALE = 60;
+const SPIN_BASE = 0.12;
+const SPIN_POWER = 0.08;
 
 export class GameScene extends Phaser.Scene {
   private bottle!: Phaser.GameObjects.Container;
   private bottleBody!: MatterJS.BodyType;
-  private ground!: MatterJS.BodyType;
 
-  private comOffsetY = 0;
   private isFlipping = false;
   private hasLanded = false;
   private resultShown = false;
   private landingCheckTimer = 0;
 
-  // Controls
-  private angleValue = 45; // degrees from vertical
-  private powerValue = 50; // power percentage
+  // Drag state
   private isDragging = false;
+  private dragAngleRad = 0;
+  private dragPower = 0; // 0-1
 
   // UI elements
   private statusText!: Phaser.GameObjects.Text;
@@ -56,7 +74,7 @@ export class GameScene extends Phaser.Scene {
     // Sky gradient
     const bg = this.add.graphics();
     bg.fillGradientStyle(0x87CEEB, 0x87CEEB, 0xE0F7FA, 0xE0F7FA, 1);
-    bg.fillRect(0, 0, 480, 720);
+    bg.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
     // Clouds
     this.drawCloud(80, 80, 0.8);
@@ -77,12 +95,12 @@ export class GameScene extends Phaser.Scene {
     // Visual ground
     const groundGfx = this.add.graphics();
     groundGfx.fillStyle(0x8B7355);
-    groundGfx.fillRect(0, GROUND_Y, 480, 100);
+    groundGfx.fillRect(0, GROUND_Y, CANVAS_WIDTH, 100);
     groundGfx.fillStyle(0x7CCD7C);
-    groundGfx.fillRect(0, GROUND_Y - 5, 480, 10);
+    groundGfx.fillRect(0, GROUND_Y - 5, CANVAS_WIDTH, 10);
 
     // Physics ground (wider than canvas to catch bottles thrown off-screen)
-    this.ground = this.matter.add.rectangle(240, GROUND_Y + 50, 800, 100, {
+    this.matter.add.rectangle(CANVAS_CENTER_X, GROUND_Y + 50, CANVAS_WIDTH + 320, 100, {
       isStatic: true,
       friction: 0.8,
       restitution: 0.1,
@@ -91,7 +109,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createBottle(): void {
-    const startX = 240;
+    const startX = CANVAS_CENTER_X;
     const startY = BOTTLE_START_Y;
 
     // Create bottle graphics
@@ -107,9 +125,6 @@ export class GameScene extends Phaser.Scene {
 
     this.drawBottleGraphics();
 
-    // Physics body - a rectangle with custom center of mass based on water level
-    const comOffsetY = this.calculateCenterOfMass(WATER_LEVEL);
-
     this.bottleBody = this.matter.add.rectangle(startX, startY, BOTTLE_WIDTH - 4, BOTTLE_HEIGHT - 4, {
       friction: 0.6,
       restitution: 0.05,
@@ -124,16 +139,7 @@ export class GameScene extends Phaser.Scene {
     // which causes NaN positions when later switching to dynamic.
     this.matter.body.setStatic(this.bottleBody, true);
 
-    // Set center of mass offset (lower = more stable)
-    this.comOffsetY = comOffsetY;
-    this.matter.body.setCentre(this.bottleBody, { x: 0, y: comOffsetY }, true);
-  }
-
-  private calculateCenterOfMass(waterLevel: number): number {
-    // Water level 0 (empty) -> center of mass at bottom: offset ~20
-    // Water level 1 (full) -> center of mass at middle: offset ~0
-    // Low water = heavy bottom = more stable landing but harder flip
-    return BOTTLE_HEIGHT * 0.15 * (1 - waterLevel);
+    this.matter.body.setCentre(this.bottleBody, { x: 0, y: COM_OFFSET_Y }, true);
   }
 
   private drawBottleGraphics(): void {
@@ -189,7 +195,7 @@ export class GameScene extends Phaser.Scene {
 
   private createUI(): void {
     // Title
-    this.add.text(240, 25, '🥤 丟水瓶挑戰', {
+    this.add.text(CANVAS_CENTER_X, 25, '🥤 丟水瓶挑戰', {
       fontSize: '22px',
       fontFamily: 'Arial, sans-serif',
       color: '#1565C0',
@@ -197,7 +203,7 @@ export class GameScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     // Status text
-    this.statusText = this.add.text(240, 300, '', {
+    this.statusText = this.add.text(CANVAS_CENTER_X, 300, '', {
       fontSize: '32px',
       fontFamily: 'Arial, sans-serif',
       color: '#ffffff',
@@ -207,7 +213,7 @@ export class GameScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(10);
 
     // Instruction
-    this.instructionText = this.add.text(240, 700, '按住瓶子拖曳設定方向與力道，放開丟出！', {
+    this.instructionText = this.add.text(CANVAS_CENTER_X, 700, '按住瓶子拖曳設定方向與力道，放開丟出！', {
       fontSize: '12px',
       fontFamily: 'Arial, sans-serif',
       color: '#000000',
@@ -222,9 +228,6 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createDragInteraction(): void {
-    const MAX_DRAG_DISTANCE = 150;
-    const BOTTLE_HIT_RADIUS = 70;
-
     this.input.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       if (this.isFlipping) return;
 
@@ -253,25 +256,22 @@ export class GameScene extends Phaser.Scene {
         return;
       }
 
-      // Angle from bottle to pointer (constrain to upper half: throw upward)
-      let angleRad = Math.atan2(dy, dx);
-      // Clamp to upper hemisphere (-170° to -10°)
-      angleRad = Phaser.Math.Clamp(angleRad, -Math.PI * 0.94, -Math.PI * 0.06);
+      // Clamp angle to upper hemisphere (-170° to -10°)
+      this.dragAngleRad = Phaser.Math.Clamp(
+        Math.atan2(dy, dx),
+        -Math.PI * 0.94,
+        -Math.PI * 0.06,
+      );
+      this.dragPower = Phaser.Math.Clamp(dist / MAX_DRAG_DISTANCE, 0, 1);
 
-      // Convert to game values
-      // angleValue: degrees from vertical (10-90)
-      const angleDeg = -(Phaser.Math.RadToDeg(angleRad) + 90); // 0=straight up, 90=horizontal
-      this.angleValue = Phaser.Math.Clamp(Math.round(angleDeg), 10, 90);
-      this.powerValue = Phaser.Math.Clamp(Math.round((dist / MAX_DRAG_DISTANCE) * 100), 0, 100);
-
-      this.drawArrow(bottleX, bottleY, angleRad, dist);
+      this.drawArrow(bottleX, bottleY, this.dragAngleRad, dist);
     });
 
     this.input.on('pointerup', () => {
       if (!this.isDragging) return;
       this.isDragging = false;
 
-      if (this.powerValue > 5) {
+      if (this.dragPower > MIN_POWER_TO_THROW) {
         this.flipBottle();
       } else {
         this.arrowGraphics.clear();
@@ -319,21 +319,15 @@ export class GameScene extends Phaser.Scene {
     // Make bottle dynamic
     this.matter.body.setStatic(this.bottleBody, false);
 
-    // Calculate launch velocity
-    const power = this.powerValue / 100;
-    const angleRad = Phaser.Math.DegToRad(-this.angleValue - 90);
+    // Calculate launch velocity from drag angle and power
+    const forceMultiplier = THROW_BASE_FORCE + this.dragPower * THROW_POWER_FORCE;
+    const vx = Math.cos(this.dragAngleRad) * forceMultiplier * THROW_VELOCITY_SCALE;
+    const vy = Math.sin(this.dragAngleRad) * forceMultiplier * THROW_VELOCITY_SCALE;
 
-    const forceMultiplier = 0.08 + power * 0.12;
-    const vx = Math.cos(angleRad) * forceMultiplier;
-    const vy = Math.sin(angleRad) * forceMultiplier;
+    this.matter.body.setVelocity(this.bottleBody, { x: vx, y: vy });
 
-    // Apply force to bottle
-    this.matter.body.setVelocity(this.bottleBody, { x: vx * 60, y: vy * 60 });
-
-    // Add spin for 360 degree rotation
-    // The spin should aim for approximately one full rotation
     const spinDirection = vx > 0 ? 1 : -1;
-    const angularVelocity = spinDirection * (0.12 + power * 0.08);
+    const angularVelocity = spinDirection * (SPIN_BASE + this.dragPower * SPIN_POWER);
     this.matter.body.setAngularVelocity(this.bottleBody, angularVelocity);
   }
 
@@ -414,7 +408,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private resetBottle(): void {
-    const startX = 240;
+    const startX = CANVAS_CENTER_X;
     const startY = BOTTLE_START_Y;
 
     // Reset body in place instead of removing/recreating to avoid Matter.js state issues
@@ -425,7 +419,7 @@ export class GameScene extends Phaser.Scene {
 
     // Position body so geometric center is at startY
     // body.position is COM, which is comOffsetY below geometric center
-    this.matter.body.setPosition(this.bottleBody, { x: startX, y: startY + this.comOffsetY });
+    this.matter.body.setPosition(this.bottleBody, { x: startX, y: startY + COM_OFFSET_Y });
 
     // Reset container to geometric center
     this.bottle.setPosition(startX, startY);
@@ -448,8 +442,8 @@ export class GameScene extends Phaser.Scene {
       // body.position is COM; geometric center is offset by -comOffsetY in local Y
       const angle = this.bottleBody.angle;
       this.bottle.setPosition(
-        this.bottleBody.position.x + this.comOffsetY * Math.sin(angle),
-        this.bottleBody.position.y - this.comOffsetY * Math.cos(angle),
+        this.bottleBody.position.x + COM_OFFSET_Y * Math.sin(angle),
+        this.bottleBody.position.y - COM_OFFSET_Y * Math.cos(angle),
       );
       this.bottle.setRotation(angle);
 
