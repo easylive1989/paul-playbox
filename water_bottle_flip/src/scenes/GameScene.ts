@@ -189,7 +189,7 @@ export class GameScene extends Phaser.Scene {
 
   private createUI(): void {
     // Title
-    this.add.text(240, 15, '🥤 丟水瓶挑戰', {
+    this.add.text(240, 25, '🥤 丟水瓶挑戰', {
       fontSize: '22px',
       fontFamily: 'Arial, sans-serif',
       color: '#1565C0',
@@ -210,7 +210,7 @@ export class GameScene extends Phaser.Scene {
     this.instructionText = this.add.text(240, 700, '按住瓶子拖曳設定方向與力道，放開丟出！', {
       fontSize: '12px',
       fontFamily: 'Arial, sans-serif',
-      color: '#546E7A',
+      color: '#000000',
     }).setOrigin(0.5);
 
     // Keyboard input
