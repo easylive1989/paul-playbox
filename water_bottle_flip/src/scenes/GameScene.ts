@@ -46,6 +46,9 @@ export class GameScene extends Phaser.Scene {
   private statusText!: Phaser.GameObjects.Text;
   private instructionText!: Phaser.GameObjects.Text;
 
+  // Reset button
+  private resetButton!: Phaser.GameObjects.Container;
+
   // Arrow indicator
   private arrowGraphics!: Phaser.GameObjects.Graphics;
 
@@ -219,8 +222,35 @@ export class GameScene extends Phaser.Scene {
       color: '#000000',
     }).setOrigin(0.5);
 
-    // Keyboard input
-    this.input.keyboard!.on('keydown-R', () => this.resetBottle());
+    // Reset button (hidden initially, shown after throw)
+    this.createResetButton();
+  }
+
+  private createResetButton(): void {
+    const btnWidth = 100;
+    const btnHeight = 36;
+    const btnX = CANVAS_CENTER_X;
+    const btnY = 660;
+
+    const bg = this.add.graphics();
+    bg.fillStyle(0x1565C0, 0.9);
+    bg.fillRoundedRect(-btnWidth / 2, -btnHeight / 2, btnWidth, btnHeight, 8);
+    bg.lineStyle(2, 0x0D47A1);
+    bg.strokeRoundedRect(-btnWidth / 2, -btnHeight / 2, btnWidth, btnHeight, 8);
+
+    const label = this.add.text(0, 0, '🔄 重置', {
+      fontSize: '16px',
+      fontFamily: 'Arial, sans-serif',
+      color: '#ffffff',
+      fontStyle: 'bold',
+    }).setOrigin(0.5);
+
+    this.resetButton = this.add.container(btnX, btnY, [bg, label]);
+    this.resetButton.setSize(btnWidth, btnHeight);
+    this.resetButton.setInteractive({ useHandCursor: true });
+    this.resetButton.on('pointerdown', () => this.resetBottle());
+    this.resetButton.setDepth(10);
+    this.resetButton.setVisible(false);
   }
 
   private createArrow(): void {
@@ -314,7 +344,8 @@ export class GameScene extends Phaser.Scene {
     this.landingCheckTimer = 0;
     this.statusText.setText('');
     this.arrowGraphics.clear();
-    this.instructionText.setText('按 R 重置');
+    this.instructionText.setVisible(false);
+    this.resetButton.setVisible(true);
 
     // Make bottle dynamic
     this.matter.body.setStatic(this.bottleBody, false);
@@ -433,7 +464,8 @@ export class GameScene extends Phaser.Scene {
     this.statusText.setText('');
 
     this.arrowGraphics.clear();
-    this.instructionText.setText('按住瓶子拖曳設定方向與力道，放開丟出！');
+    this.resetButton.setVisible(false);
+    this.instructionText.setVisible(true);
   }
 
   update(_time: number, delta: number): void {
@@ -454,7 +486,8 @@ export class GameScene extends Phaser.Scene {
           this.resultShown = true;
           this.statusText.setText('💨 飛走了！');
           this.statusText.setColor('#FF9800');
-          this.instructionText.setText('按 R 重置');
+          this.instructionText.setVisible(false);
+          this.resetButton.setVisible(true);
         }
       }
 
