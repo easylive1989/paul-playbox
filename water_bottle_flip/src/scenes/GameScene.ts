@@ -160,6 +160,7 @@ export class GameScene extends Phaser.Scene {
       density: 0.002 + waterLevel * 0.005,
       frictionAir: 0.01,
       label: 'bottle',
+      isStatic: true,
       chamfer: { radius: 4 },
     });
 
@@ -508,23 +509,17 @@ export class GameScene extends Phaser.Scene {
     const startX = 240;
     const startY = TABLE_Y - TABLE_HEIGHT / 2 - BOTTLE_HEIGHT / 2;
 
-    // Remove old body
-    this.matter.world.remove(this.bottleBody);
+    // Reset body in place instead of removing/recreating to avoid Matter.js state issues
+    this.matter.body.setStatic(this.bottleBody, true);
+    this.matter.body.setPosition(this.bottleBody, { x: startX, y: startY });
+    this.matter.body.setAngle(this.bottleBody, 0);
+    this.matter.body.setVelocity(this.bottleBody, { x: 0, y: 0 });
+    this.matter.body.setAngularVelocity(this.bottleBody, 0);
 
-    // Recreate body
+    // Update density and center of mass for current difficulty
     const waterLevel = DIFFICULTIES[this.difficultyIndex].waterLevel;
     const comOffsetY = this.calculateCenterOfMass(waterLevel);
-
-    this.bottleBody = this.matter.add.rectangle(startX, startY, BOTTLE_WIDTH - 4, BOTTLE_HEIGHT - 4, {
-      friction: 0.6,
-      restitution: 0.05,
-      density: 0.002 + waterLevel * 0.005,
-      frictionAir: 0.01,
-      label: 'bottle',
-      isStatic: true,
-      chamfer: { radius: 4 },
-    });
-
+    this.matter.body.setDensity(this.bottleBody, 0.002 + waterLevel * 0.005);
     this.matter.body.setCentre(this.bottleBody, { x: 0, y: comOffsetY }, true);
 
     // Reset container position
