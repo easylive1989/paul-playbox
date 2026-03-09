@@ -27,7 +27,6 @@ export class GameScene extends Phaser.Scene {
   // UI elements
   private statusText!: Phaser.GameObjects.Text;
   private instructionText!: Phaser.GameObjects.Text;
-  private dragInfoText!: Phaser.GameObjects.Text;
 
   // Arrow indicator
   private arrowGraphics!: Phaser.GameObjects.Graphics;
@@ -207,13 +206,6 @@ export class GameScene extends Phaser.Scene {
       strokeThickness: 4,
     }).setOrigin(0.5).setDepth(10);
 
-    // Drag info (angle & power shown during drag)
-    this.dragInfoText = this.add.text(240, 650, '', {
-      fontSize: '13px',
-      fontFamily: 'Arial, sans-serif',
-      color: '#37474F',
-    }).setOrigin(0.5);
-
     // Instruction
     this.instructionText = this.add.text(240, 700, '按住瓶子拖曳設定方向與力道，放開丟出！', {
       fontSize: '12px',
@@ -244,7 +236,6 @@ export class GameScene extends Phaser.Scene {
       if (dist < BOTTLE_HIT_RADIUS) {
         this.isDragging = true;
         this.arrowGraphics.clear();
-        this.dragInfoText.setText('');
       }
     });
 
@@ -259,7 +250,6 @@ export class GameScene extends Phaser.Scene {
 
       if (dist < 10) {
         this.arrowGraphics.clear();
-        this.dragInfoText.setText('');
         return;
       }
 
@@ -275,7 +265,6 @@ export class GameScene extends Phaser.Scene {
       this.powerValue = Phaser.Math.Clamp(Math.round((dist / MAX_DRAG_DISTANCE) * 100), 0, 100);
 
       this.drawArrow(bottleX, bottleY, angleRad, dist);
-      this.dragInfoText.setText(`角度: ${this.angleValue}°  力道: ${this.powerValue}%`);
     });
 
     this.input.on('pointerup', () => {
@@ -286,7 +275,6 @@ export class GameScene extends Phaser.Scene {
         this.flipBottle();
       } else {
         this.arrowGraphics.clear();
-        this.dragInfoText.setText('');
       }
     });
   }
@@ -449,7 +437,7 @@ export class GameScene extends Phaser.Scene {
     this.hasLanded = false;
     this.resultShown = false;
     this.statusText.setText('');
-    this.dragInfoText.setText('');
+
     this.arrowGraphics.clear();
     this.instructionText.setText('按住瓶子拖曳設定方向與力道，放開丟出！');
   }
