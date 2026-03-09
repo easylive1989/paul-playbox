@@ -3,6 +3,7 @@ import Phaser from 'phaser';
 const BOTTLE_WIDTH = 40;
 const BOTTLE_HEIGHT = 120;
 const GROUND_Y = 620;
+const BOTTLE_START_Y = 460; // Hand height for throwing
 
 // Water level presets (0 = empty, 1 = full)
 const DIFFICULTIES = [
@@ -17,6 +18,7 @@ export class GameScene extends Phaser.Scene {
   private ground!: MatterJS.BodyType;
 
   private difficultyIndex = 0;
+  private comOffsetY = 0;
   private isFlipping = false;
   private hasLanded = false;
   private resultShown = false;
@@ -91,8 +93,8 @@ export class GameScene extends Phaser.Scene {
     groundGfx.fillStyle(0x7CCD7C);
     groundGfx.fillRect(0, GROUND_Y - 5, 480, 10);
 
-    // Physics ground
-    this.ground = this.matter.add.rectangle(240, GROUND_Y + 50, 480, 100, {
+    // Physics ground (wider than canvas to catch bottles thrown off-screen)
+    this.ground = this.matter.add.rectangle(240, GROUND_Y + 50, 800, 100, {
       isStatic: true,
       friction: 0.8,
       restitution: 0.1,
@@ -102,7 +104,7 @@ export class GameScene extends Phaser.Scene {
 
   private createBottle(): void {
     const startX = 240;
-    const startY = GROUND_Y - BOTTLE_HEIGHT / 2;
+    const startY = BOTTLE_START_Y;
 
     // Create bottle graphics
     this.bottleGraphics = this.add.graphics();
@@ -136,6 +138,7 @@ export class GameScene extends Phaser.Scene {
     this.matter.body.setStatic(this.bottleBody, true);
 
     // Set center of mass offset (lower = more stable)
+    this.comOffsetY = comOffsetY;
     this.matter.body.setCentre(this.bottleBody, { x: 0, y: comOffsetY }, true);
   }
 
@@ -474,22 +477,31 @@ export class GameScene extends Phaser.Scene {
 
   private resetBottle(): void {
     const startX = 240;
-    const startY = GROUND_Y - BOTTLE_HEIGHT / 2;
+    const startY = BOTTLE_START_Y;
 
     // Reset body in place instead of removing/recreating to avoid Matter.js state issues
     this.matter.body.setStatic(this.bottleBody, true);
-    this.matter.body.setPosition(this.bottleBody, { x: startX, y: startY });
     this.matter.body.setAngle(this.bottleBody, 0);
     this.matter.body.setVelocity(this.bottleBody, { x: 0, y: 0 });
     this.matter.body.setAngularVelocity(this.bottleBody, 0);
 
     // Update density and center of mass for current difficulty
     const waterLevel = DIFFICULTIES[this.difficultyIndex].waterLevel;
-    const comOffsetY = this.calculateCenterOfMass(waterLevel);
+    const newComOffsetY = this.calculateCenterOfMass(waterLevel);
     this.matter.body.setDensity(this.bottleBody, 0.002 + waterLevel * 0.005);
-    this.matter.body.setCentre(this.bottleBody, { x: 0, y: comOffsetY }, true);
 
-    // Reset container position
+    // Only update setCentre by the delta to avoid accumulation
+    if (newComOffsetY !== this.comOffsetY) {
+      const delta = newComOffsetY - this.comOffsetY;
+      this.matter.body.setCentre(this.bottleBody, { x: 0, y: delta }, true);
+      this.comOffsetY = newComOffsetY;
+    }
+
+    // Position body so geometric center is at startY
+    // body.position is COM, which is comOffsetY below geometric center
+    this.matter.body.setPosition(this.bottleBody, { x: startX, y: startY + this.comOffsetY });
+
+    // Reset container to geometric center
     this.bottle.setPosition(startX, startY);
     this.bottle.setRotation(0);
 
@@ -509,9 +521,14 @@ export class GameScene extends Phaser.Scene {
 
   update(_time: number, delta: number): void {
     if (this.isFlipping) {
-      // Sync container with physics body
-      this.bottle.setPosition(this.bottleBody.position.x, this.bottleBody.position.y);
-      this.bottle.setRotation(this.bottleBody.angle);
+      // Sync container with physics body's geometric center (not COM)
+      // body.position is COM; geometric center is offset by -comOffsetY in local Y
+      const angle = this.bottleBody.angle;
+      this.bottle.setPosition(
+        this.bottleBody.position.x + this.comOffsetY * Math.sin(angle),
+        this.bottleBody.position.y - this.comOffsetY * Math.cos(angle),
+      );
+      this.bottle.setRotation(angle);
 
       // Check if bottle is out of bounds
       if (this.bottleBody.position.x < -100 || this.bottleBody.position.x > 580 ||
