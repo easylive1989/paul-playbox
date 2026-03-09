@@ -5,19 +5,14 @@ const BOTTLE_HEIGHT = 120;
 const GROUND_Y = 620;
 const BOTTLE_START_Y = GROUND_Y - BOTTLE_HEIGHT / 2;
 
-// Water level presets (0 = empty, 1 = full)
-const DIFFICULTIES = [
-  { name: '簡單 Easy', waterLevel: 0.2, color: 0x4fc3f7 },
-  { name: '普通 Normal', waterLevel: 0.5, color: 0x29b6f6 },
-  { name: '困難 Hard', waterLevel: 0.8, color: 0x0288d1 },
-];
+const WATER_LEVEL = 0.5;
+const WATER_COLOR = 0x29b6f6;
 
 export class GameScene extends Phaser.Scene {
   private bottle!: Phaser.GameObjects.Container;
   private bottleBody!: MatterJS.BodyType;
   private ground!: MatterJS.BodyType;
 
-  private difficultyIndex = 0;
   private comOffsetY = 0;
   private isFlipping = false;
   private hasLanded = false;
@@ -31,14 +26,8 @@ export class GameScene extends Phaser.Scene {
 
   // UI elements
   private statusText!: Phaser.GameObjects.Text;
-  private difficultyText!: Phaser.GameObjects.Text;
-  private scoreText!: Phaser.GameObjects.Text;
   private instructionText!: Phaser.GameObjects.Text;
   private dragInfoText!: Phaser.GameObjects.Text;
-
-  // Score
-  private score = 0;
-  private attempts = 0;
 
   // Arrow indicator
   private arrowGraphics!: Phaser.GameObjects.Graphics;
@@ -120,13 +109,12 @@ export class GameScene extends Phaser.Scene {
     this.drawBottleGraphics();
 
     // Physics body - a rectangle with custom center of mass based on water level
-    const waterLevel = DIFFICULTIES[this.difficultyIndex].waterLevel;
-    const comOffsetY = this.calculateCenterOfMass(waterLevel);
+    const comOffsetY = this.calculateCenterOfMass(WATER_LEVEL);
 
     this.bottleBody = this.matter.add.rectangle(startX, startY, BOTTLE_WIDTH - 4, BOTTLE_HEIGHT - 4, {
       friction: 0.6,
       restitution: 0.05,
-      density: 0.002 + waterLevel * 0.005,
+      density: 0.002 + WATER_LEVEL * 0.005,
       frictionAir: 0.01,
       label: 'bottle',
       chamfer: { radius: 4 },
@@ -150,7 +138,6 @@ export class GameScene extends Phaser.Scene {
   }
 
   private drawBottleGraphics(): void {
-    const diff = DIFFICULTIES[this.difficultyIndex];
     const w = BOTTLE_WIDTH;
     const h = BOTTLE_HEIGHT;
 
@@ -178,9 +165,9 @@ export class GameScene extends Phaser.Scene {
     this.bottleGraphics.strokeRect(-neckWidth / 2, -h / 2, neckWidth, neckHeight + 4);
 
     // Water inside
-    const waterHeight = bodyHeight * diff.waterLevel * 0.85;
+    const waterHeight = bodyHeight * WATER_LEVEL * 0.85;
     if (waterHeight > 0) {
-      this.waterGraphics.fillStyle(diff.color, 0.6);
+      this.waterGraphics.fillStyle(WATER_COLOR, 0.6);
       this.waterGraphics.fillRoundedRect(
         -bodyWidth / 2 + 3,
         -h / 2 + neckHeight + bodyHeight - waterHeight - 2,
@@ -208,31 +195,6 @@ export class GameScene extends Phaser.Scene {
       fontFamily: 'Arial, sans-serif',
       color: '#1565C0',
       fontStyle: 'bold',
-    }).setOrigin(0.5);
-
-    // Difficulty
-    this.difficultyText = this.add.text(240, 42, `難度: ${DIFFICULTIES[this.difficultyIndex].name}`, {
-      fontSize: '14px',
-      fontFamily: 'Arial, sans-serif',
-      color: '#1976D2',
-    }).setOrigin(0.5);
-
-    // Difficulty buttons
-    const prevBtn = this.add.text(130, 42, '◀', {
-      fontSize: '16px', color: '#1976D2',
-    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-    prevBtn.on('pointerdown', () => this.changeDifficulty(-1));
-
-    const nextBtn = this.add.text(350, 42, '▶', {
-      fontSize: '16px', color: '#1976D2',
-    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-    nextBtn.on('pointerdown', () => this.changeDifficulty(1));
-
-    // Score
-    this.scoreText = this.add.text(240, 68, `得分: 0 / 0`, {
-      fontSize: '14px',
-      fontFamily: 'Arial, sans-serif',
-      color: '#2E7D32',
     }).setOrigin(0.5);
 
     // Status text
@@ -385,9 +347,6 @@ export class GameScene extends Phaser.Scene {
     const spinDirection = vx > 0 ? 1 : -1;
     const angularVelocity = spinDirection * (0.12 + power * 0.08);
     this.matter.body.setAngularVelocity(this.bottleBody, angularVelocity);
-
-    this.attempts++;
-    this.scoreText.setText(`得分: ${this.score} / ${this.attempts}`);
   }
 
   private onCollision = (_event: Phaser.Physics.Matter.Events.CollisionStartEvent, bodyA: MatterJS.BodyType, bodyB: MatterJS.BodyType): void => {
@@ -433,8 +392,6 @@ export class GameScene extends Phaser.Scene {
       if (isUpright && hasFlipped) {
         this.statusText.setText('🎉 成功！');
         this.statusText.setColor('#4CAF50');
-        this.score++;
-        this.scoreText.setText(`得分: ${this.score} / ${this.attempts}`);
         this.celebrationEffect();
       } else if (!hasFlipped) {
         this.statusText.setText('❌ 翻轉不夠！');
@@ -468,13 +425,6 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  private changeDifficulty(delta: number): void {
-    if (this.isFlipping) return;
-    this.difficultyIndex = Phaser.Math.Clamp(this.difficultyIndex + delta, 0, DIFFICULTIES.length - 1);
-    this.difficultyText.setText(`難度: ${DIFFICULTIES[this.difficultyIndex].name}`);
-    this.resetBottle();
-  }
-
   private resetBottle(): void {
     const startX = 240;
     const startY = BOTTLE_START_Y;
@@ -485,18 +435,6 @@ export class GameScene extends Phaser.Scene {
     this.matter.body.setVelocity(this.bottleBody, { x: 0, y: 0 });
     this.matter.body.setAngularVelocity(this.bottleBody, 0);
 
-    // Update density and center of mass for current difficulty
-    const waterLevel = DIFFICULTIES[this.difficultyIndex].waterLevel;
-    const newComOffsetY = this.calculateCenterOfMass(waterLevel);
-    this.matter.body.setDensity(this.bottleBody, 0.002 + waterLevel * 0.005);
-
-    // Only update setCentre by the delta to avoid accumulation
-    if (newComOffsetY !== this.comOffsetY) {
-      const delta = newComOffsetY - this.comOffsetY;
-      this.matter.body.setCentre(this.bottleBody, { x: 0, y: delta }, true);
-      this.comOffsetY = newComOffsetY;
-    }
-
     // Position body so geometric center is at startY
     // body.position is COM, which is comOffsetY below geometric center
     this.matter.body.setPosition(this.bottleBody, { x: startX, y: startY + this.comOffsetY });
@@ -504,9 +442,6 @@ export class GameScene extends Phaser.Scene {
     // Reset container to geometric center
     this.bottle.setPosition(startX, startY);
     this.bottle.setRotation(0);
-
-    // Redraw bottle
-    this.drawBottleGraphics();
 
     // Reset state
     this.isFlipping = false;
