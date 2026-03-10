@@ -17,4 +17,7 @@ const config: Phaser.Types.Core.GameConfig = {
   scene: [MenuScene, LevelSelectScene, GameScene, RewardScene],
 };
 
-new Phaser.Game(config);
+const game = new Phaser.Game(config);
+
+// Expose game instance for E2E testing
+(window as unknown as Record<string, unknown>).__GAME__ = game;

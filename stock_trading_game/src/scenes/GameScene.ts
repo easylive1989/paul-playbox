@@ -51,6 +51,30 @@ export class GameScene extends Phaser.Scene {
   // Short sell enabled this turn
   private shortEnabled: boolean = false;
 
+  // ── Test helpers (public getters for E2E) ──
+  get __testState() {
+    const price = this.priceGenerator?.getCurrentPrice() ?? 0;
+    return {
+      candleCount: this.candleCount,
+      gameOver: this.gameOver,
+      levelCleared: this.levelCleared,
+      currentLevel: this.currentLevel,
+      cash: this.tradingSystem?.getCash() ?? 0,
+      shares: this.tradingSystem?.getShares() ?? 0,
+      isHolding: this.tradingSystem?.isHolding() ?? false,
+      isShort: this.tradingSystem?.isShort() ?? false,
+      totalValue: this.tradingSystem?.getTotalValue(price) ?? 0,
+      targetValue: this.levelDef?.targetValue ?? 0,
+      maxCandles: this.levelDef?.maxCandles ?? 0,
+      handSize: this.cardSystem?.getHand().length ?? 0,
+      drawPileSize: this.cardSystem?.getDrawPileSize() ?? 0,
+      discardPileSize: this.cardSystem?.getDiscardPileSize() ?? 0,
+      frozen: this.frozen,
+      shortEnabled: this.shortEnabled,
+      price,
+    };
+  }
+
   constructor() {
     super({ key: 'GameScene' });
   }
