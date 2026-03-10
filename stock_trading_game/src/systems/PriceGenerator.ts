@@ -1,3 +1,5 @@
+import { ActiveEffect } from './CardSystem';
+
 export interface Candle {
   open: number;
   high: number;
@@ -26,7 +28,6 @@ export class PriceGenerator {
   private currentPrice: number;
   private scenario: Scenario;
   private candlesInScenario: number = 0;
-  private scenarioPhase: number = 0;
 
   constructor(startPrice: number = 100) {
     this.currentPrice = startPrice;
@@ -36,11 +37,13 @@ export class PriceGenerator {
   private pickScenario(): Scenario {
     const index = Math.floor(Math.random() * SCENARIOS.length);
     this.candlesInScenario = 0;
-    this.scenarioPhase = 0;
     return { ...SCENARIOS[index] };
   }
 
-  nextCandle(): Candle {
+  /**
+   * Generate next candle, optionally influenced by active card effects.
+   */
+  nextCandle(activeEffects: ActiveEffect[] = []): Candle {
     this.candlesInScenario++;
 
     // Check if we need to switch scenarios
@@ -57,13 +60,40 @@ export class PriceGenerator {
       trend = -Math.abs(trend) * 1.2;
     }
 
+    let volatility = this.scenario.volatility;
+
+    // ── Apply card effects ──
+    for (const effect of activeEffects) {
+      switch (effect.effectType) {
+        case 'trend_up':
+        case 'bull_run':
+          trend += effect.value;
+          break;
+        case 'trend_down':
+        case 'bear_run':
+          trend += effect.value; // value is negative
+          break;
+        case 'stabilize':
+          volatility = effect.value; // override to low volatility
+          break;
+        case 'black_swan':
+          trend = effect.value; // force -15%
+          volatility = 0.01;
+          break;
+        case 'moon_shot':
+          trend = effect.value; // force +12%
+          volatility = 0.01;
+          break;
+      }
+    }
+
     const open = this.currentPrice;
-    const change = trend + (Math.random() - 0.5) * 2 * this.scenario.volatility;
+    const change = trend + (Math.random() - 0.5) * 2 * volatility;
     const close = open * (1 + change);
 
     // Generate high and low with random wicks
-    const wickUp = Math.random() * this.scenario.volatility * open;
-    const wickDown = Math.random() * this.scenario.volatility * open;
+    const wickUp = Math.random() * volatility * open;
+    const wickDown = Math.random() * volatility * open;
     const high = Math.max(open, close) + wickUp;
     const low = Math.min(open, close) - wickDown;
 
@@ -82,5 +112,18 @@ export class PriceGenerator {
 
   getCurrentPrice(): number {
     return Math.round(this.currentPrice * 100) / 100;
+  }
+
+  /** Get current scenario info (for insider_info card) */
+  getScenarioHint(): { name: string; remainingCandles: number; trendDirection: string } {
+    const remaining = this.scenario.duration - this.candlesInScenario;
+    let dir = 'sideways';
+    if (this.scenario.trend > 0.005) dir = 'up';
+    else if (this.scenario.trend < -0.005) dir = 'down';
+    return {
+      name: this.scenario.name,
+      remainingCandles: Math.max(0, remaining),
+      trendDirection: dir,
+    };
   }
 }

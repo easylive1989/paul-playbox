@@ -1,5 +1,8 @@
 import Phaser from 'phaser';
+import { MenuScene } from './scenes/MenuScene';
+import { LevelSelectScene } from './scenes/LevelSelectScene';
 import { GameScene } from './scenes/GameScene';
+import { RewardScene } from './scenes/RewardScene';
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -11,7 +14,10 @@ const config: Phaser.Types.Core.GameConfig = {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
-  scene: [GameScene],
+  scene: [MenuScene, LevelSelectScene, GameScene, RewardScene],
 };
 
-new Phaser.Game(config);
+const game = new Phaser.Game(config);
+
+// Expose game instance for E2E testing
+(window as unknown as Record<string, unknown>).__GAME__ = game;
