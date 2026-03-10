@@ -68,32 +68,6 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Outfit', sans-serif; }
 
-    /* Scanline overlay for retro feel */
-    body::after {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background: repeating-linear-gradient(
-        0deg,
-        transparent,
-        transparent 2px,
-        rgba(0, 0, 0, 0.015) 2px,
-        rgba(0, 0, 0, 0.015) 4px
-      );
-      pointer-events: none;
-      z-index: 100;
-    }
-    .dark body::after,
-    :is(.dark) body::after {
-      background: repeating-linear-gradient(
-        0deg,
-        transparent,
-        transparent 2px,
-        rgba(0, 0, 0, 0.03) 2px,
-        rgba(0, 0, 0, 0.03) 4px
-      );
-    }
-
     /* Animations */
     @keyframes fadeSlideUp {
       from { opacity: 0; transform: translateY(24px); }
