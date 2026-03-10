@@ -12,6 +12,7 @@ on:
       - 'tiny_swords/**'
       - 'water_bottle_flip/**'
       - 'stock_trading_game/**'
+      - 'sokoban/**'
       - 'index.html'
       - 'public/**'
       - '.github/workflows/deploy-games.yaml'
@@ -182,6 +183,12 @@ jobs:
         with:
           name: stock_trading_game
           path: stock_trading_game/dist
+
+      - name: Upload sokoban artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sokoban
+          path: sokoban
 
       - name: Prepare landing page
         run: |
