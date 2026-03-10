@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sokoban</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#1a1a2e;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:monospace;color:#e0e0e0;overflow:hidden;user-select:none}
+canvas{border:2px solid #16213e;border-radius:4px;image-rendering:pixelated;touch-action:none}
+#ui{text-align:center;margin-bottom:12px}
+h1{font-size:20px;color:#e94560;margin-bottom:4px;letter-spacing:2px}
+#info{font-size:13px;color:#8899aa;margin-bottom:8px}
+#btns{display:flex;gap:8px;justify-content:center;margin-top:10px;flex-wrap:wrap}
+#btns button{background:#16213e;color:#e94560;border:1px solid #e94560;padding:6px 14px;border-radius:4px;cursor:pointer;font-family:monospace;font-size:12px;transition:all .2s}
+#btns button:hover{background:#e94560;color:#fff}
+#dpad{display:none;margin-top:12px}
+#dpad table{margin:0 auto;border-spacing:4px}
+#dpad td{width:48px;height:48px;text-align:center;vertical-align:middle}
+#dpad button{width:48px;height:48px;background:#16213e;color:#e94560;border:1px solid #e94560;border-radius:8px;font-size:20px;cursor:pointer;touch-action:manipulation}
+#dpad button:active{background:#e94560;color:#fff}
+#win{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:10;flex-direction:column;align-items:center;justify-content:center}
+#win h2{color:#e94560;font-size:28px;margin-bottom:12px}
+#win p{color:#aaa;margin-bottom:16px;font-size:14px}
+#win button{background:#e94560;color:#fff;border:none;padding:10px 24px;border-radius:4px;cursor:pointer;font-family:monospace;font-size:14px}
+@media(pointer:coarse){#dpad{display:block}}
+</style>
+</head>
+<body>
+<div id="ui">
+<h1>SOKOBAN</h1>
+<div id="info">Level <span id="lvl">1</span>/5 &nbsp; Moves: <span id="moves">0</span></div>
+<canvas id="c" width="384" height="384"></canvas>
+<div id="btns">
+<button onclick="undo()">Undo (Z)</button>
+<button onclick="restart()">Restart (R)</button>
+<button onclick="prevLvl()">Prev (&lt;)</button>
+<button onclick="nextLvl()">Next (&gt;)</button>
+</div>
+<div id="dpad"><table>
+<tr><td></td><td><button onclick="move(0,-1)">&uarr;</button></td><td></td></tr>
+<tr><td><button onclick="move(-1,0)">&larr;</button></td><td></td><td><button onclick="move(1,0)">&rarr;</button></td></tr>
+<tr><td></td><td><button onclick="move(0,1)">&darr;</button></td><td></td></tr>
+</table></div>
+</div>
+<div id="win"><h2>Level Complete!</h2><p id="winMsg"></p><button id="winBtn">Next Level</button></div>
+<script>
+const W=0,F=1,G=2,B=3,P=4;
+// Levels: W=wall, F=floor, G=goal, B=box, P=player
+// Encoded as strings: #=wall, .=floor, o=goal, b=box, @=player, +=box on goal, $=player on goal
+const lvlData=[
+// Level 1 - simple
+[
+"..####..",
+"###..#..",
+"#.b..#..",
+"#..b.###",
+"###o.@.#",
+"..#o..##",
+"..#####.",
+],
+// Level 2
+[
+".#####.",
+"##...#.",
+"#.boo#.",
+"#.bb.##",
+"#..o@.#",
+"######.",
+],
+// Level 3
+[
+"..####.",
+"###..#.",
+"#..b.#.",
+"#.#bo##",
+"#.@oo.#",
+"#..####",
+"####...",
+],
+// Level 4
+[
+"####...",
+"#..###.",
+"#.bo.#.",
+"##.bo##",
+".#.@o.#",
+".#..b.#",
+".######",
+],
+// Level 5
+[
+".######.",
+"##....#.",
+"#..bb.#.",
+"#.#oo###",
+"#..oo..#",
+"###bb..#",
+"..#..@.#",
+"..######",
+],
+];
+
+let lvl=0,grid,px,py,moves,hist,S;
+const ctx=document.getElementById('c').getContext('2d');
+
+function parse(d){
+  let maxW=0;
+  d.forEach(r=>{if(r.length>maxW)maxW=r.length});
+  const h=d.length;
+  S=Math.min(Math.floor(384/maxW),Math.floor(384/h));
+  const c=document.getElementById('c');
+  c.width=maxW*S;c.height=h*S;
+  grid=[];
+  for(let y=0;y<h;y++){
+    grid[y]=[];
+    for(let x=0;x<maxW;x++){
+      const ch=d[y][x]||'.';
+      if(ch==='#')grid[y][x]={t:W,box:false};
+      else if(ch==='.')grid[y][x]={t:F,box:false};
+      else if(ch==='o')grid[y][x]={t:G,box:false};
+      else if(ch==='b'){grid[y][x]={t:F,box:true};}
+      else if(ch==='@'){grid[y][x]={t:F,box:false};px=x;py=y;}
+      else if(ch==='+'){grid[y][x]={t:G,box:true};}
+      else if(ch==='$'){grid[y][x]={t:G,box:false};px=x;py=y;}
+      else grid[y][x]={t:F,box:false};
+    }
+  }
+}
+
+function draw(){
+  const c=ctx.canvas;
+  ctx.fillStyle='#1a1a2e';
+  ctx.fillRect(0,0,c.width,c.height);
+  for(let y=0;y<grid.length;y++){
+    for(let x=0;x<grid[y].length;x++){
+      const cell=grid[y][x];
+      const dx=x*S,dy=y*S;
+      if(cell.t===W){
+        ctx.fillStyle='#16213e';ctx.fillRect(dx,dy,S,S);
+        ctx.fillStyle='#0f3460';ctx.fillRect(dx+2,dy+2,S-4,S-4);
+      }else{
+        ctx.fillStyle='#1a1a2e';ctx.fillRect(dx,dy,S,S);
+        if(cell.t===G){
+          ctx.fillStyle='#533483';
+          ctx.beginPath();ctx.arc(dx+S/2,dy+S/2,S/5,0,Math.PI*2);ctx.fill();
+        }
+      }
+      if(cell.box){
+        const m=3;
+        if(cell.t===G){
+          ctx.fillStyle='#2ecc71';ctx.fillRect(dx+m,dy+m,S-m*2,S-m*2);
+          ctx.fillStyle='#27ae60';ctx.fillRect(dx+m+3,dy+m+3,S-m*2-6,S-m*2-6);
+        }else{
+          ctx.fillStyle='#e94560';ctx.fillRect(dx+m,dy+m,S-m*2,S-m*2);
+          ctx.fillStyle='#c0392b';ctx.fillRect(dx+m+3,dy+m+3,S-m*2-6,S-m*2-6);
+        }
+      }
+      if(x===px&&y===py){
+        ctx.fillStyle='#f1c40f';
+        ctx.beginPath();ctx.arc(dx+S/2,dy+S/2,S/3,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='#f39c12';
+        ctx.beginPath();ctx.arc(dx+S/2,dy+S/2,S/5,0,Math.PI*2);ctx.fill();
+      }
+    }
+  }
+  document.getElementById('lvl').textContent=lvl+1;
+  document.getElementById('moves').textContent=moves;
+}
+
+function checkWin(){
+  for(let y=0;y<grid.length;y++)
+    for(let x=0;x<grid[y].length;x++)
+      if(grid[y][x].t===G&&!grid[y][x].box)return false;
+  return true;
+}
+
+function move(dx,dy){
+  const nx=px+dx,ny=py+dy;
+  if(ny<0||ny>=grid.length||nx<0||nx>=grid[ny].length)return;
+  const target=grid[ny][nx];
+  if(target.t===W)return;
+  if(target.box){
+    const bx=nx+dx,by=ny+dy;
+    if(by<0||by>=grid.length||bx<0||bx>=grid[by].length)return;
+    const bt=grid[by][bx];
+    if(bt.t===W||bt.box)return;
+    hist.push({px,py,bx:nx,by:ny,tx:bx,ty:by});
+    target.box=false;bt.box=true;
+  }else{
+    hist.push({px,py,bx:-1,by:-1,tx:-1,ty:-1});
+  }
+  px=nx;py=ny;moves++;
+  draw();
+  if(checkWin()){
+    setTimeout(()=>{
+      const w=document.getElementById('win');
+      w.style.display='flex';
+      document.getElementById('winMsg').textContent='Completed in '+moves+' moves!';
+      const btn=document.getElementById('winBtn');
+      if(lvl<lvlData.length-1){
+        btn.textContent='Next Level';
+        btn.onclick=()=>{w.style.display='none';lvl++;loadLvl();};
+      }else{
+        btn.textContent='Play Again';
+        btn.onclick=()=>{w.style.display='none';lvl=0;loadLvl();};
+      }
+    },200);
+  }
+}
+
+function undo(){
+  if(!hist.length)return;
+  const h=hist.pop();
+  px=h.px;py=h.py;moves--;
+  if(h.bx>=0){
+    grid[h.ty][h.tx].box=false;
+    grid[h.by][h.bx].box=true;
+  }
+  draw();
+}
+
+function restart(){loadLvl();}
+function prevLvl(){if(lvl>0){lvl--;loadLvl();}}
+function nextLvl(){if(lvl<lvlData.length-1){lvl++;loadLvl();}}
+
+function loadLvl(){
+  moves=0;hist=[];
+  parse(lvlData[lvl]);
+  draw();
+}
+
+document.addEventListener('keydown',e=>{
+  if(document.getElementById('win').style.display==='flex')return;
+  switch(e.key){
+    case'ArrowUp':case'w':case'W':move(0,-1);e.preventDefault();break;
+    case'ArrowDown':case's':case'S':move(0,1);e.preventDefault();break;
+    case'ArrowLeft':case'a':case'A':move(-1,0);e.preventDefault();break;
+    case'ArrowRight':case'd':case'D':move(1,0);e.preventDefault();break;
+    case'z':case'Z':undo();break;
+    case'r':case'R':restart();break;
+    case',':case'<':prevLvl();break;
+    case'.':case'>':nextLvl();break;
+  }
+});
+
+// Touch/swipe support
+let tx,ty;
+const cv=document.getElementById('c');
+cv.addEventListener('touchstart',e=>{const t=e.touches[0];tx=t.clientX;ty=t.clientY;},{passive:true});
+cv.addEventListener('touchend',e=>{
+  const t=e.changedTouches[0];
+  const dx=t.clientX-tx,dy=t.clientY-ty;
+  if(Math.abs(dx)<10&&Math.abs(dy)<10)return;
+  if(Math.abs(dx)>Math.abs(dy))move(dx>0?1:-1,0);
+  else move(0,dy>0?1:-1);
+},{passive:true});
+
+loadLvl();
+</script>
+</body>
+</html>
