@@ -13,8 +13,6 @@ on:
       - 'water_bottle_flip/**'
       - 'stock_trading_game/**'
       - 'sokoban/**'
-      - 'index.html'
-      - 'public/**'
       - '.github/workflows/deploy-games.yaml'
   workflow_dispatch:
 
@@ -190,18 +188,6 @@ jobs:
           name: sokoban
           path: sokoban
 
-      - name: Prepare landing page
-        run: |
-          mkdir -p landing-page-deploy
-          cp index.html landing-page-deploy/
-          cp -r public landing-page-deploy/public
-
-      - name: Upload landing page artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: landing-page
-          path: landing-page-deploy
-
   deploy:
     needs: [build-flutter, build-static]
     runs-on: ubuntu-latest
@@ -213,12 +199,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: combined
-
-      - name: Arrange landing page
-        run: |
-          cp combined/landing-page/index.html combined/index.html
-          cp -r combined/landing-page/public combined/public
-          rm -rf combined/landing-page
 
       - name: Upload combined Pages artifact
         uses: actions/upload-pages-artifact@v3
