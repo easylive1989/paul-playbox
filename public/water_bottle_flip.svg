@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="225" viewBox="0 0 400 225">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#87CEEB"/>
+      <stop offset="100%" stop-color="#E0F7FA"/>
+    </linearGradient>
+  </defs>
+  <!-- Sky -->
+  <rect width="400" height="225" fill="url(#sky)"/>
+  <!-- Ground -->
+  <rect x="0" y="180" width="400" height="45" fill="#8B7355"/>
+  <rect x="0" y="175" width="400" height="8" fill="#7CCD7C"/>
+  <!-- Table -->
+  <rect x="140" y="140" width="120" height="12" fill="#8B4513" rx="2"/>
+  <rect x="152" y="152" width="6" height="28" fill="#6B3410"/>
+  <rect x="248" y="152" width="6" height="28" fill="#6B3410"/>
+  <!-- Bottle on table -->
+  <rect x="190" y="70" width="20" height="70" fill="#BBDEFB" fill-opacity="0.5" stroke="#90CAF9" stroke-width="1.5" rx="3"/>
+  <!-- Bottle neck -->
+  <rect x="195" y="58" width="10" height="16" fill="#BBDEFB" fill-opacity="0.5" stroke="#90CAF9" stroke-width="1.5"/>
+  <!-- Cap -->
+  <rect x="193" y="54" width="14" height="6" fill="white" stroke="#90CAF9" stroke-width="1" rx="2"/>
+  <!-- Water -->
+  <rect x="192" y="105" width="16" height="32" fill="#29B6F6" fill-opacity="0.6" rx="2"/>
+  <!-- Flying bottle (rotated) -->
+  <g transform="translate(300, 80) rotate(160)">
+    <rect x="-10" y="-35" width="20" height="70" fill="#BBDEFB" fill-opacity="0.4" stroke="#90CAF9" stroke-width="1.5" rx="3"/>
+    <rect x="-5" y="-47" width="10" height="16" fill="#BBDEFB" fill-opacity="0.4" stroke="#90CAF9" stroke-width="1.5"/>
+    <rect x="-7" y="-51" width="14" height="6" fill="white" stroke="#90CAF9" stroke-width="1" rx="2"/>
+    <rect x="-8" y="5" width="16" height="25" fill="#4FC3F7" fill-opacity="0.5" rx="2"/>
+  </g>
+  <!-- Motion arc -->
+  <path d="M 200 90 Q 250 20 300 80" fill="none" stroke="#E53935" stroke-width="2" stroke-dasharray="6,4" opacity="0.6"/>
+  <!-- Arrow -->
+  <polygon points="195,85 185,95 190,90" fill="#E53935" opacity="0.7"/>
+  <!-- Title -->
+  <text x="200" y="210" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#1565C0">🥤 丟水瓶挑戰</text>
+</svg>
