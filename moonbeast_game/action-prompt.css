@@ -1,0 +1,4 @@
+.message {
+  top: clamp(88px, 18vh, 160px);
+  transform: translateX(-50%);
+}

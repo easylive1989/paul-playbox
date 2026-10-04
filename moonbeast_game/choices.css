@@ -1,0 +1,12 @@
+.card.wide{width:min(940px,94vw)}
+.card h3{font:18px Georgia,serif;color:#9cb6bd}
+.card h3 i{font-style:normal;color:#6f8c95}
+.options{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:24px 0}
+.option{position:relative;margin:0!important;width:auto!important;min-height:145px;padding:18px!important;display:block!important;text-align:left;border:1px solid var(--line)!important;background:linear-gradient(145deg,#102630,#07161d)!important;color:var(--ink)!important}
+.option:hover,.option.selected{border-color:var(--c)!important;transform:translateY(-4px);box-shadow:0 12px 35px #001018}
+.option small,.option b,.option span{display:block}
+.option small{color:#6f8d96;letter-spacing:.12em}
+.option b{font:24px Georgia,serif;margin:13px 0}
+.option span{font-size:10px;color:#86a2aa;line-height:1.6}
+.option i{position:absolute;right:14px;top:14px;padding:3px 7px;border:1px solid;font-style:normal;font-size:9px}
+@media(max-width:720px){.options{grid-template-columns:1fr;max-height:46vh;overflow:auto}}

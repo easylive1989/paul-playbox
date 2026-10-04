@@ -15,12 +15,14 @@
 | Water Bottle Flip | Phaser 3 | `/water_bottle_flip/` |
 | Stock Trading | JavaScript | `/stock_trading_game/` |
 | Sokoban | JavaScript | `/sokoban/` |
+| 月蝕獸鬥 Moonbeast | Three.js | `/moonbeast_game/` |
 
 ## 技術棧
 
 - **Flutter** - 大部分遊戲使用 Flutter 開發，編譯為 Web 版本
 - **JavaScript** - Tiny Swords RTS、Sokoban、Stock Trading 使用原生 JS 開發
 - **Phaser 3** - Water Bottle Flip 使用 Phaser 3 引擎
+- **Three.js** - 月蝕獸鬥使用原生 JS 搭配 Three.js 與 GLB 3D 模型
 
 ## 授權
 
