@@ -1,0 +1,21 @@
+# dependencies
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# scratch / editor / OS
+*.log
+*.bak
+*.tmp
+*~
+*.swp
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# large archives: ship these as GitHub Release attachments, not repo objects.
+# Once a big blob is pushed it stays in history even after deletion.
+*.zip
