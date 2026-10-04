@@ -13,6 +13,7 @@ on:
       - 'water_bottle_flip/**'
       - 'stock_trading_game/**'
       - 'sokoban/**'
+      - 'moonbeast_game/**'
       - '.github/workflows/deploy-games.yaml'
   workflow_dispatch:
 
@@ -187,6 +188,23 @@ jobs:
         with:
           name: sokoban
           path: sokoban
+
+      - name: Validate moonbeast_game
+        working-directory: moonbeast_game
+        run: |
+          node --check game.js
+          node --check data.js
+          test -f index.html
+          test -f vendor/three-bundle.js
+          for model in boss fin flare frost iron lynx mist moon moss storm thunder; do
+            test -f "assets/models/${model}.glb"
+          done
+
+      - name: Upload moonbeast_game artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: moonbeast_game
+          path: moonbeast_game
 
   deploy:
     needs: [build-flutter, build-static]
